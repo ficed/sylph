@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SylphGame": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\ficed\\Projects\\sylph\\Test"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "FrameWidth": 16,
+  "FrameHeight": 24,
+  "Animations": [
+    {
+      "Name": "Idle",
+      "Frames": [ 1 ]
+    },
+    {
+      "Name": "WalkW",
+      "Frames": [ 7, 6, 7, 8 ]
+    },
+    {
+      "Name": "WalkE",
+      "Frames": [ 7, 6, 7, 8 ],
+      "Flags":  "FlipH"
+    },
+    {
+      "Name": "WalkS",
+      "Frames": [ 1, 0, 1, 2 ]
+    },
+    {
+      "Name": "WalkN",
+      "Frames": [ 4, 3, 4, 5 ]
+    }
+  ]
+}
