@@ -40,13 +40,14 @@ namespace SylphGame.Entities {
             );
         }
 
-        public class Instance {
+        public class Instance : IEntity {
             private SpriteAnimation _animation;
             private int _frame;
             private bool _loop;
             private Sprite _sprite;
             
             public Vector2 Position { get; set; }
+            public int StepFrames => 15;
 
             public Instance(Sprite sprite) {
                 _sprite = sprite;

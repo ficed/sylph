@@ -1,7 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Collections.Generic;
 
 namespace SylphGame {
     public class Game1 : Game {
@@ -9,13 +11,12 @@ namespace SylphGame {
         private SpriteBatch _spriteBatch;
         private SGame _sgame;
 
-        private Entities.Sprite.Instance _terra;
+        private List<IEntity> _entities = new();
 
         public Game1() {
             _graphics = new GraphicsDeviceManager(this);
             _graphics.PreferredBackBufferWidth = 1280 * 2;
             _graphics.PreferredBackBufferHeight = 720 * 2;
-            Window.Title = "Sylph";
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
@@ -23,6 +24,7 @@ namespace SylphGame {
 
         protected override void Initialize() {
             _sgame = new SGame(Environment.GetCommandLineArgs()[1], GraphicsDevice);
+            Window.Title = _sgame.Config.Title;
             base.Initialize();
         }
 
@@ -30,9 +32,15 @@ namespace SylphGame {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             var sprite = new Entities.Sprite(_sgame, "Terra");
-            _terra = sprite.New();
-            _terra.Position = new Vector2(64, 32);
-            _terra.PlayAnimation("WalkS", true);
+            var terra = sprite.New();
+            terra.Position = new Vector2(64, 32);
+            terra.PlayAnimation("WalkS", true);
+            _entities.Add(terra);
+
+            var box = _sgame.Boxes.New();
+            box.Location = new Rectangle(200, 180, 96, 48);
+            box.Expand(180);
+            _entities.Add(box);
         }
 
         int _frame;
@@ -43,10 +51,9 @@ namespace SylphGame {
 
             _frame++;
 
-            if ((_frame % 15) == 0) {
-
-                _terra.Step();
-            }
+            foreach (var entity in _entities)
+                if ((_frame % entity.StepFrames) == 0)
+                    entity.Step();
 
             base.Update(gameTime);
         }
@@ -55,11 +62,18 @@ namespace SylphGame {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin(
-                transformMatrix: Matrix.CreateScale(8),
+                transformMatrix: Matrix.CreateScale(_sgame.Config.Scale),
                 samplerState: SamplerState.PointClamp
             );
 
-            _terra.Render(_spriteBatch);
+            foreach (var entity in _entities)
+                entity.Render(_spriteBatch);
+
+            _spriteBatch.DrawString(
+                _sgame.Fonts.GetFont(16 * _sgame.Config.Scale), "Welcome to Sylph!", new Vector2(32, 128), Color.White,
+                effect: FontSystemEffect.None,
+                scale: new Vector2(1f / _sgame.Config.Scale)
+            );
 
             _spriteBatch.End();
 

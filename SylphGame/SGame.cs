@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using FontStashSharp;
+using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -12,10 +13,27 @@ namespace SylphGame {
 
         public GraphicsDevice Graphics { get; private set; }
         public Data Data { get; private set; }
+        public FontSystem Fonts { get; private set; }
+        public UI.Boxes Boxes { get; private set; }
+        public SylphConfig Config { get; private set; }
+
 
         public SGame(string root, GraphicsDevice graphics) {
             Data = new Data(root);
             Graphics = graphics;
+
+            Config = Load<SylphConfig>("Game", "Sylph");
+
+            FontSystemDefaults.FontResolutionFactor = 2f;
+            FontSystemDefaults.KernelWidth = 2;
+            FontSystemDefaults.KernelHeight = 2;
+
+            Fonts = new FontSystem();
+            //TODO configure!
+            using(var s = Data.Open("Font", "FF6Snes.ttf"))
+                Fonts.AddFont(s);
+
+            Boxes = new UI.Boxes(this);
         }
 
         private Dictionary<string, WeakReference<Texture2D>> _textures = new(StringComparer.InvariantCultureIgnoreCase);
