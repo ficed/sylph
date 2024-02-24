@@ -44,6 +44,7 @@ namespace SylphGame.UI {
             public bool IsAnimating => _current < _total;
 
             public int StepFrames => 1;
+            public Layer Layer { get; set; }
 
             public Instance(Boxes boxes) {
                 _boxes = boxes;
@@ -81,37 +82,43 @@ namespace SylphGame.UI {
                 bg.Inflate(-2, -2);
                 spriteBatch.Draw(
                     _boxes._background,
-                    bg,
-                    Color.White
+                    bg, null,
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, Layer
                 );
 
+                var borderLayer = Layer.Next;
                 //TL
                 spriteBatch.Draw(
                     _boxes._border,
                     new Rectangle(current.X, current.Y, 8, 8),
                     new Rectangle(0, 0, 8, 8),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
                 //TR
                 spriteBatch.Draw(
                     _boxes._border,
                     new Rectangle(current.Right - 8, current.Y, 8, 8),
                     new Rectangle(_boxes._border.Width - 8, 0, 8, 8),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
                 //BL
                 spriteBatch.Draw(
                     _boxes._border,
                     new Rectangle(current.X, current.Bottom - 8, 8, 8),
                     new Rectangle(0, _boxes._border.Height - 8, 8, 8),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
                 //BR
                 spriteBatch.Draw(
                     _boxes._border,
                     new Rectangle(current.Right - 8, current.Bottom - 8, 8, 8),
                     new Rectangle(_boxes._border.Width - 8, _boxes._border.Height - 8, 8, 8),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
 
                 //T
@@ -119,28 +126,32 @@ namespace SylphGame.UI {
                     _boxes._border,
                     new Rectangle(current.X + 8, current.Y, current.Width - 16, 8),
                     new Rectangle(8, 0, _boxes._border.Width - 16, 8),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
                 //B
                 spriteBatch.Draw(
                     _boxes._border,
                     new Rectangle(current.X + 8, current.Bottom - 8, current.Width - 16, 8),
                     new Rectangle(8, _boxes._border.Height - 8, _boxes._border.Width - 16, 8),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
                 //L
                 spriteBatch.Draw(
                     _boxes._border,
                     new Rectangle(current.X, current.Y + 8, 8, current.Height - 16),
                     new Rectangle(0, 8, 8, _boxes._border.Height - 16),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
                 //R
                 spriteBatch.Draw(
                     _boxes._border,
                     new Rectangle(current.Right - 8, current.Y + 8, 8, current.Height - 16),
                     new Rectangle(_boxes._border.Width - 8, 8, 8, _boxes._border.Height - 16),
-                    Color.White
+                    Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, borderLayer
                 );
             }
         }

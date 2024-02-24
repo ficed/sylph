@@ -48,6 +48,7 @@ namespace SylphGame.Entities {
             
             public Vector2 Position { get; set; }
             public int StepFrames => 15;
+            public Layer Layer { get; set; }
 
             public Instance(Sprite sprite) {
                 _sprite = sprite;
@@ -75,7 +76,7 @@ namespace SylphGame.Entities {
                     0,
                     Vector2.Zero,
                     fx,
-                    0
+                    Layer
                 );
             }
 

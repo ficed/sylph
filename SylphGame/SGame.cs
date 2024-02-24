@@ -1,4 +1,5 @@
 ﻿using FontStashSharp;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 using System;
@@ -9,6 +10,38 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SylphGame {
+
+    public struct Layer {
+        private const int LAYER_COUNT = 32;
+        private const float LAYER_AMOUNT = 1f / LAYER_COUNT;
+
+        public static readonly Layer BACKGROUND_BACK = new Layer(1);
+        public static readonly Layer BACKGROUND_MID = new Layer(4);
+        public static readonly Layer BACKGROUND_FRONT = new Layer(7);
+        public static readonly Layer BACKGROUND_OVERLAY = new Layer(10);
+
+        public static readonly Layer UI_BACK = new Layer(16);
+        public static readonly Layer UI_MID = new Layer(20);
+        public static readonly Layer UI_FRONT = new Layer(24);
+
+        public static readonly Layer MAX_OVERLAY = new Layer(31);
+
+        private int _index;
+
+        private Layer(int index) {
+            if ((index < 0) || (index > LAYER_COUNT))
+                throw new IndexOutOfRangeException();
+            _index = index;
+        }
+
+        public Layer Next => new Layer(_index + 1);
+        public Layer Prev => new Layer(_index - 1);
+
+        public static implicit operator float(Layer L) {
+            return LAYER_AMOUNT * L._index;
+        }
+    }
+
     public class SGame {
 
         public GraphicsDevice Graphics { get; private set; }
@@ -16,6 +49,7 @@ namespace SylphGame {
         public FontSystem Fonts { get; private set; }
         public UI.Boxes Boxes { get; private set; }
         public SylphConfig Config { get; private set; }
+        public DynamicSpriteFont DefaultFont { get; private set; }
 
 
         public SGame(string root, GraphicsDevice graphics) {
@@ -32,6 +66,7 @@ namespace SylphGame {
             //TODO configure!
             using(var s = Data.Open("Font", "FF6Snes.ttf"))
                 Fonts.AddFont(s);
+            DefaultFont = Fonts.GetFont(16 * Config.Scale);
 
             Boxes = new UI.Boxes(this);
         }

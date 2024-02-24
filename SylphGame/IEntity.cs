@@ -9,6 +9,7 @@ namespace SylphGame {
     public interface IEntity {
 
         int StepFrames { get; }
+        Layer Layer { get; set; }
 
         void Render(SpriteBatch spriteBatch);
         void Step();

@@ -33,14 +33,26 @@ namespace SylphGame {
 
             var sprite = new Entities.Sprite(_sgame, "Terra");
             var terra = sprite.New();
+            terra.Layer = Layer.BACKGROUND_MID;
             terra.Position = new Vector2(64, 32);
             terra.PlayAnimation("WalkS", true);
             _entities.Add(terra);
 
+            /*
             var box = _sgame.Boxes.New();
             box.Location = new Rectangle(200, 180, 96, 48);
             box.Expand(180);
             _entities.Add(box);
+            */
+
+            var dlg = new UI.DialogBox(
+                _sgame,
+                "Hello, here is some text that will hopefully have to wrap",
+                new Rectangle(200, 180, 128, 60)
+            ) {
+                Layer = Layer.UI_MID
+            };
+            _entities.Add(dlg);
         }
 
         int _frame;
@@ -62,15 +74,17 @@ namespace SylphGame {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin(
-                transformMatrix: Matrix.CreateScale(_sgame.Config.Scale),
-                samplerState: SamplerState.PointClamp
+                transformMatrix: Matrix.CreateScale(_sgame.Config.Scale, _sgame.Config.Scale, 1),
+                samplerState: SamplerState.PointClamp,
+                sortMode: SpriteSortMode.FrontToBack,
+                depthStencilState: DepthStencilState.None
             );
 
             foreach (var entity in _entities)
                 entity.Render(_spriteBatch);
 
             _spriteBatch.DrawString(
-                _sgame.Fonts.GetFont(16 * _sgame.Config.Scale), "Welcome to Sylph!", new Vector2(32, 128), Color.White,
+                _sgame.DefaultFont, "Welcome to Sylph!", new Vector2(32, _frame % 256), Color.White,
                 effect: FontSystemEffect.None,
                 scale: new Vector2(1f / _sgame.Config.Scale)
             );
