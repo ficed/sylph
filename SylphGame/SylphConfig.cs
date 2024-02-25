@@ -14,6 +14,7 @@ namespace SylphGame {
     }
 
     public class SylphConfig {
+        public string GameID { get; set; }
         public string Title { get; set; }
         public float Scale { get; set; }
         public string SplashGraphic { get; set; }

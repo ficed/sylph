@@ -51,6 +51,7 @@ namespace SylphGame {
         public UI.Boxes Boxes { get; private set; }
         public SylphConfig Config { get; private set; }
         public DynamicSpriteFont DefaultFont { get; private set; }
+        public InputState Input { get; private set; } = new InputState();
 
         private Stack<Screen> _screens = new();
         public Screen ActiveScreen => _screens.Peek();
