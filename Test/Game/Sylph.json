@@ -1,4 +1,11 @@
 {
   "Title": "Sylph Test",
-  "Scale":  5
+  "Scale": 6,
+  "SplashGraphic": "Splash",
+  "UIDefaults": {
+    "ConfirmSfx": "DC",
+    "MoveSfx": "DC",
+    "CancelSfx": "0D",
+    "CursorGraphic": "Cursor"
+  }
 }

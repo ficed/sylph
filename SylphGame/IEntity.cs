@@ -14,4 +14,8 @@ namespace SylphGame {
         void Render(SpriteBatch spriteBatch);
         void Step();
     }
+
+    public interface ITransientEntity : IEntity {
+        bool IsComplete { get; }
+    }
 }

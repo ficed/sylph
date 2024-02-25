@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -51,6 +52,8 @@ namespace SylphGame {
         public SylphConfig Config { get; private set; }
         public DynamicSpriteFont DefaultFont { get; private set; }
 
+        private Stack<Screen> _screens = new();
+        public Screen ActiveScreen => _screens.Peek();
 
         public SGame(string root, GraphicsDevice graphics) {
             Data = new Data(root);
@@ -70,6 +73,17 @@ namespace SylphGame {
 
             Boxes = new UI.Boxes(this);
         }
+
+        public void PushScreen(Screen s) {
+            _screens.Push(s);
+            ActiveScreen.Activated();
+        }
+
+        public void PopScreen(Screen s) {
+            Trace.Assert(s == _screens.Pop());
+            ActiveScreen.Activated();
+        }
+
 
         private Dictionary<string, WeakReference<Texture2D>> _textures = new(StringComparer.InvariantCultureIgnoreCase);
         public Texture2D LoadTex(string category, string file) {
@@ -91,6 +105,31 @@ namespace SylphGame {
                     return serializer.Deserialize<T>(jsonReader);
                 }
             }
+        }
+
+        private Dictionary<string, WeakReference<LoadedSfx>> _sfx = new(StringComparer.InvariantCultureIgnoreCase);
+        public LoadedSfx LoadSfx(string name) {
+            if (_sfx.TryGetValue(name, out var wr) && wr.TryGetTarget(out var effect))
+                return effect;
+            using (var s = Data.Open("Sfx", name + ".wav")) {
+                effect = new LoadedSfx(Microsoft.Xna.Framework.Audio.SoundEffect.FromStream(s));
+                _sfx[name] = new WeakReference<LoadedSfx>(effect);
+                return effect;
+            }
+        }
+    }
+
+    public class LoadedSfx {
+        private Microsoft.Xna.Framework.Audio.SoundEffect _sfx;
+
+        public LoadedSfx(Microsoft.Xna.Framework.Audio.SoundEffect sfx) {
+            _sfx = sfx;
+        }
+
+        public void Play() {
+            var instance = _sfx.CreateInstance();
+            instance.Play();
+            //TODO loop, volume, cancel, ...
         }
     }
 }
