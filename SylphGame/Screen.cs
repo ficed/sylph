@@ -29,11 +29,15 @@ namespace SylphGame {
                 ent.Render(spriteBatch);
         }
 
+        protected virtual Matrix GetTransform() {
+            return Matrix.CreateScale(_sgame.Config.Scale, _sgame.Config.Scale, 1);
+        }
+
         public virtual void Render() {
             _sgame.Graphics.Clear(Background);
 
             _spriteBatch.Begin(
-                transformMatrix: Matrix.CreateScale(_sgame.Config.Scale, _sgame.Config.Scale, 1),
+                transformMatrix: GetTransform(),
                 samplerState: SamplerState.PointClamp,
                 sortMode: SpriteSortMode.FrontToBack,
                 depthStencilState: DepthStencilState.None,

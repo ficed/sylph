@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 namespace SylphGame {
     public class Data {
 
-        private string _root;
+        private List<string> _roots;
 
-        public Data(string root) {
-            _root = root;
+        public Data(IEnumerable<string> roots) {
+            _roots = roots.ToList();
         }
 
         public Stream Open(string category, string name) {
@@ -22,11 +22,12 @@ namespace SylphGame {
         }
 
         public Stream TryOpen(string category, string name) {
-            string fn = Path.Combine(_root, category, name);
-            if (File.Exists(fn))
-                return File.OpenRead(fn);
-            else
-                return null;
+            foreach (string root in _roots) {
+                string fn = Path.Combine(root, category, name);
+                if (File.Exists(fn))
+                    return File.OpenRead(fn);
+            }
+            return null;
         }
     }
 }

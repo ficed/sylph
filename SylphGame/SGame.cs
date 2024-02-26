@@ -56,8 +56,8 @@ namespace SylphGame {
         private Stack<Screen> _screens = new();
         public Screen ActiveScreen => _screens.Peek();
 
-        public SGame(string root, GraphicsDevice graphics) {
-            Data = new Data(root);
+        public SGame(IEnumerable<string> roots, GraphicsDevice graphics) {
+            Data = new Data(roots);
             Graphics = graphics;
 
             Config = Load<SylphConfig>("Game", "Sylph");
@@ -91,16 +91,23 @@ namespace SylphGame {
             string key = category + "\\" + file;
             if (_textures.TryGetValue(key, out var wr) && wr.TryGetTarget(out var tex))
                 return tex;
-            using (var s = Data.Open(category, file + ".png")) {
+            using (var s = Data.Open(category, AddExtIfNeeded(file, ".png"))) {
                 tex = Texture2D.FromStream(Graphics, s);
                 _textures[key] = new WeakReference<Texture2D>(tex);
                 return tex;
             }
         }
 
+        private string AddExtIfNeeded(string file, string ext) {
+            if (file.Contains('.'))
+                return file;
+            else
+                return file + ext;
+        }
+
         public T Load<T>(string category, string file) {
             var serializer = new JsonSerializer();
-            using (var s = Data.Open(category, file + ".json")) {
+            using (var s = Data.Open(category, AddExtIfNeeded(file, ".json"))) {
                 using (var streamReader = new StreamReader(s))
                 using (var jsonReader = new JsonTextReader(streamReader)) {
                     return serializer.Deserialize<T>(jsonReader);

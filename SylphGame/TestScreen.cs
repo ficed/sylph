@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using SylphGame.UI;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,10 @@ using System.Threading.Tasks;
 
 namespace SylphGame {
     public class TestScreen : Screen {
+
+        private Field.TileMap _map;
+        private int _scrollX, _scrollY;
+
         public TestScreen(SGame sgame) : base(sgame) {
             var sprite = new Entities.Sprite(_sgame, "Terra");
             var terra = sprite.New();
@@ -24,6 +29,39 @@ namespace SylphGame {
                 Layer = Layer.UI_MID
             };
             _entities.Add(dlg);
+
+            _map = new Field.TileMap(sgame, "cave1");
+        }
+
+        protected override Matrix GetTransform() {
+            return Matrix.CreateTranslation(_scrollX, _scrollY, 0) * base.GetTransform();
+        }
+
+        protected override void Render(SpriteBatch spriteBatch) {
+            base.Render(spriteBatch);
+            Layer depth = Layer.BACKGROUND_BACK;
+            foreach(int layer in Enumerable.Range(0, _map.LayerCount)) {
+                _map.RenderLayer(spriteBatch, layer, depth);
+                depth = depth.Next;
+                //Draw sprites
+                depth = depth.Next;
+                //Draw overlay
+                depth = depth.Next;
+            }
+        }
+
+        public override void Step() {
+            base.Step();
+            if (_sgame.Input.IsDown(InputButton.Left)) {
+                _scrollX--;
+            } else if (_sgame.Input.IsDown(InputButton.Right)) {
+                _scrollX++;
+            } else if (_sgame.Input.IsDown(InputButton.Up)) {
+                _scrollY--;
+            } else if (_sgame.Input.IsDown(InputButton.Down)) {
+                _scrollY++;
+            }
+
         }
     }
 

@@ -21,11 +21,11 @@ namespace SylphGame {
         }
 
         protected override void Initialize() {
-            _sgame = new SGame(Environment.GetCommandLineArgs()[1], GraphicsDevice);
+            _sgame = new SGame(Environment.GetCommandLineArgs().Skip(1), GraphicsDevice);
             Window.Title = _sgame.Config.Title;
-            //            _sgame.PushScreen(new TestScreen(_sgame));
+                        _sgame.PushScreen(new TestScreen(_sgame));
             //            _sgame.PushScreen(new Splash(_sgame));
-            _sgame.PushScreen(new TestUIScreen(_sgame));
+            //_sgame.PushScreen(new TestUIScreen(_sgame));
             base.Initialize();
         }
 
