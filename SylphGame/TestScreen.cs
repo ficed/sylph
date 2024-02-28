@@ -8,29 +8,28 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SylphGame {
+
+    public class TestMap : Field.Map {
+        public TestMap(SGame sgame, string tilemap) : base(sgame, tilemap) {
+            var sprite = new Field.SpriteObject(sgame, "Terra");
+            sprite.X = 18;
+            sprite.Y = 10;
+            sprite.PlayAnimation("WalkS", true);
+            _objects.Add(sprite);
+        }
+    }
+
     public class TestScreen : Screen {
 
-        private Field.TileMap _map;
+        private TestMap _map;
         private int _scrollX, _scrollY;
 
         public TestScreen(SGame sgame) : base(sgame) {
-            var sprite = new Entities.Sprite(_sgame, "Terra");
-            var terra = sprite.New();
-            terra.Layer = Layer.BACKGROUND_MID;
-            terra.Position = new Vector2(64, 32);
-            terra.PlayAnimation("WalkS", true);
-            _entities.Add(terra);
+            _map = new TestMap(sgame, "Cave1");
+        }
 
-            var dlg = new UI.DialogBox(
-                _sgame,
-                "Hello, here is some text that will hopefully have to wrap",
-                new Rectangle(200, 180, 128, 60)
-            ) {
-                Layer = Layer.UI_MID
-            };
-            _entities.Add(dlg);
-
-            _map = new Field.TileMap(sgame, "cave1");
+        protected override IEnumerable<IEntity> GetActiveEntities() {
+            return _map.Entities;
         }
 
         protected override Matrix GetTransform() {
@@ -38,20 +37,13 @@ namespace SylphGame {
         }
 
         protected override void Render(SpriteBatch spriteBatch) {
-            base.Render(spriteBatch);
-            Layer depth = Layer.BACKGROUND_BACK;
-            foreach(int layer in Enumerable.Range(0, _map.LayerCount)) {
-                _map.RenderLayer(spriteBatch, layer, depth);
-                depth = depth.Next;
-                //Draw sprites
-                depth = depth.Next;
-                //Draw overlay
-                depth = depth.Next;
-            }
+            //base.Render(spriteBatch);
+            _map.Render(spriteBatch);
         }
 
         public override void Step() {
             base.Step();
+            _map.Step();
             if (_sgame.Input.IsDown(InputButton.Left)) {
                 _scrollX--;
             } else if (_sgame.Input.IsDown(InputButton.Right)) {

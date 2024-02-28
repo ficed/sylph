@@ -14,6 +14,11 @@ namespace SylphGame {
         protected List<IEntity> _entities = new();
         protected int _frame;
 
+        protected virtual IEnumerable<IEntity> GetActiveEntities() => _entities;
+        protected virtual void RemoveEntity(IEntity ent) {
+            _entities.Remove(ent);
+        }
+
 
         public virtual Color Background => Color.CornflowerBlue;
 
@@ -25,7 +30,7 @@ namespace SylphGame {
         public virtual void Activated() { }
 
         protected virtual void Render(SpriteBatch spriteBatch) { 
-            foreach(var ent in _entities)
+            foreach(var ent in GetActiveEntities())
                 ent.Render(spriteBatch);
         }
 
@@ -48,10 +53,10 @@ namespace SylphGame {
         }
 
         public virtual void Step() {
-            var current = _entities.ToArray();
+            var current = GetActiveEntities();
             foreach(var ent in current) {
                 if ((ent is ITransientEntity trEnt) && trEnt.IsComplete)
-                    _entities.Remove(ent);
+                    RemoveEntity(ent);
                 else {
                     if ((_frame % ent.StepFrames) == 0)
                         ent.Step();

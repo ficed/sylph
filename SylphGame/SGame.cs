@@ -8,7 +8,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace SylphGame {
 
@@ -43,7 +45,32 @@ namespace SylphGame {
         }
     }
 
+    public interface ICacheable { }
+
     public class SGame {
+
+        private static Dictionary<Type, Func<SGame, string, ICacheable>> _cacheCreate = new();
+        public static void Register<T>(Func<SGame, string, T> create) where T : ICacheable {
+            _cacheCreate[typeof(T)] = (sg, str) => create(sg, str);
+        }
+
+        static SGame() {
+            Register((sg, str) => new Entities.Sprite(sg, str));
+            SGame.Register((sg, str) => new LoadedSfx(sg, str));
+        }
+
+        private Dictionary<Type, Dictionary<string, WeakReference<ICacheable>>> _cache = new();
+
+        public T Load<T>(string which) where T : ICacheable {
+            if (!_cache.TryGetValue(typeof(T), out var dict))
+                dict = _cache[typeof(T)] = new Dictionary<string, WeakReference<ICacheable>>(StringComparer.InvariantCultureIgnoreCase);
+            if (dict.TryGetValue(which, out var wr) && wr.TryGetTarget(out var result))
+                return (T)result;
+            result = _cacheCreate[typeof(T)](this, which);
+            dict[which] = new WeakReference<ICacheable>(result);
+            return (T)result;
+        }
+
 
         public GraphicsDevice Graphics { get; private set; }
         public Data Data { get; private set; }
@@ -60,7 +87,7 @@ namespace SylphGame {
             Data = new Data(roots);
             Graphics = graphics;
 
-            Config = Load<SylphConfig>("Game", "Sylph");
+            Config = LoadJson<SylphConfig>("Game", "Sylph");
 
             FontSystemDefaults.FontResolutionFactor = 2f;
             FontSystemDefaults.KernelWidth = 2;
@@ -105,7 +132,7 @@ namespace SylphGame {
                 return file + ext;
         }
 
-        public T Load<T>(string category, string file) {
+        public T LoadJson<T>(string category, string file) {
             var serializer = new JsonSerializer();
             using (var s = Data.Open(category, AddExtIfNeeded(file, ".json"))) {
                 using (var streamReader = new StreamReader(s))
@@ -115,23 +142,16 @@ namespace SylphGame {
             }
         }
 
-        private Dictionary<string, WeakReference<LoadedSfx>> _sfx = new(StringComparer.InvariantCultureIgnoreCase);
-        public LoadedSfx LoadSfx(string name) {
-            if (_sfx.TryGetValue(name, out var wr) && wr.TryGetTarget(out var effect))
-                return effect;
-            using (var s = Data.Open("Sfx", name + ".wav")) {
-                effect = new LoadedSfx(Microsoft.Xna.Framework.Audio.SoundEffect.FromStream(s));
-                _sfx[name] = new WeakReference<LoadedSfx>(effect);
-                return effect;
-            }
-        }
     }
 
-    public class LoadedSfx {
+    public class LoadedSfx : ICacheable {
+
         private Microsoft.Xna.Framework.Audio.SoundEffect _sfx;
 
-        public LoadedSfx(Microsoft.Xna.Framework.Audio.SoundEffect sfx) {
-            _sfx = sfx;
+        public LoadedSfx(SGame sgame, string which) {
+            using (var s = sgame.Data.Open("Sfx", which + ".wav")) {
+                _sfx = Microsoft.Xna.Framework.Audio.SoundEffect.FromStream(s);
+            }
         }
 
         public void Play() {

@@ -27,7 +27,8 @@ namespace SylphGame.Entities {
         public List<SpriteAnimation> Animations { get; set; } = new();
     }
 
-    public class Sprite {
+    public class Sprite : ICacheable {
+
         private SpriteData _data;
         private Texture2D _tex;
 
@@ -90,7 +91,7 @@ namespace SylphGame.Entities {
 
 
         public Sprite(SGame sgame, string name) {
-            _data = sgame.Load<SpriteData>("Sprite", name);
+            _data = sgame.LoadJson<SpriteData>("Sprite", name);
             _tex = sgame.LoadTex("Sprite", name);
         }
 

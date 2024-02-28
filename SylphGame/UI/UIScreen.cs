@@ -22,9 +22,9 @@ namespace SylphGame.UI {
             base.Activated();
             _container.Init(_sgame);
             _cursor = _sgame.LoadTex("UI", _sgame.Config.UIDefaults.CursorGraphic);
-            _sfxMove = _sgame.LoadSfx(_sgame.Config.UIDefaults.MoveSfx);
-            _sfxCancel = _sgame.LoadSfx(_sgame.Config.UIDefaults.CancelSfx);
-            _sfxConfirm = _sgame.LoadSfx(_sgame.Config.UIDefaults.ConfirmSfx);
+            _sfxMove = _sgame.Load<LoadedSfx>(_sgame.Config.UIDefaults.MoveSfx);
+            _sfxCancel = _sgame.Load<LoadedSfx>(_sgame.Config.UIDefaults.CancelSfx);
+            _sfxConfirm = _sgame.Load<LoadedSfx>(_sgame.Config.UIDefaults.ConfirmSfx);
         }
 
         public override void Step() {

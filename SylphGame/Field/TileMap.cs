@@ -90,12 +90,14 @@ namespace SylphGame.Field {
         private Dictionary<int, (Rectangle SrcRect, Texture2D Tex)> _tiles = new();
 
         public int LayerCount => _map.Layers.Count;
+        public int TileWidth => _map.TileWidth;
+        public int TileHeight => _map.TileHeight;
 
         public TileMap(SGame sgame, string which) {
-            _map = sgame.Load<TmjMap>("ffmap", "cave1.tmj");
+            _map = sgame.LoadJson<TmjMap>("ffmap", "cave1.tmj");
 
             foreach(var sourceTileset in _map.Tilesets) {
-                var tileset = sgame.Load<TsjTileset>("ffmap", sourceTileset.Source);
+                var tileset = sgame.LoadJson<TsjTileset>("ffmap", sourceTileset.Source);
                 _tilesets.Add(tileset);
                 _textures.Add(sgame.LoadTex("ffmap", tileset.Image));
                 int index = sourceTileset.FirstGid;
