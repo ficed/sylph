@@ -1,7 +1,7 @@
 {
   "Title": "Sylph Test",
   "GameID": "test.sylph.ficedula.co.uk",
-  "Scale": 6,
+  "Scale": 3,
   "SplashGraphic": "Splash",
   "UIDefaults": {
     "ConfirmSfx": "DC",

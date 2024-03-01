@@ -82,6 +82,9 @@ namespace SylphGame {
 
         private Stack<Screen> _screens = new();
         public Screen ActiveScreen => _screens.Peek();
+        public int DPIScale { get; set; }
+
+        public Vector2 ScreenBounds => new Vector2(1280f / Config.Scale, 720f / Config.Scale);
 
         public SGame(IEnumerable<string> roots, GraphicsDevice graphics) {
             Data = new Data(roots);
@@ -134,6 +137,7 @@ namespace SylphGame {
 
         public T LoadJson<T>(string category, string file) {
             var serializer = new JsonSerializer();
+
             using (var s = Data.Open(category, AddExtIfNeeded(file, ".json"))) {
                 using (var streamReader = new StreamReader(s))
                 using (var jsonReader = new JsonTextReader(streamReader)) {

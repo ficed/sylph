@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,5 +39,12 @@ namespace SylphGame {
         public bool IsDown(InputButton b) => _downFor[b] > 0;
         public bool IsJustDown(InputButton b) => _downFor[b] == 1;
         public bool IsDownRepeat(InputButton b) => (_downFor[b] % 20) == 1;
+
+        public Vector2 MovementVector() {
+            return new Vector2(
+                IsDown(InputButton.Left) ? -1 : IsDown(InputButton.Right) ? 1 : 0,
+                IsDown(InputButton.Up) ? -1 : IsDown(InputButton.Down) ? 1 : 0
+            );
+        }
     }
 }

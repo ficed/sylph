@@ -35,7 +35,7 @@ namespace SylphGame {
         }
 
         protected virtual Matrix GetTransform() {
-            return Matrix.CreateScale(_sgame.Config.Scale, _sgame.Config.Scale, 1);
+            return Matrix.CreateScale(_sgame.DPIScale * _sgame.Config.Scale, _sgame.DPIScale * _sgame.Config.Scale, 1);
         }
 
         public virtual void Render() {

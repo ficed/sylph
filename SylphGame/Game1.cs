@@ -13,8 +13,6 @@ namespace SylphGame {
 
         public Game1() {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferWidth = 1280 * 2;
-            _graphics.PreferredBackBufferHeight = 720 * 2;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
@@ -22,8 +20,14 @@ namespace SylphGame {
 
         protected override void Initialize() {
             _sgame = new SGame(Environment.GetCommandLineArgs().Skip(1), GraphicsDevice);
+            _sgame.DPIScale = Math.Max(1, _graphics.GraphicsDevice.DisplayMode.Width / 1280);
+            _graphics.PreferredBackBufferWidth = 1280 * _sgame.DPIScale;
+            _graphics.PreferredBackBufferHeight = 720 * _sgame.DPIScale;
+            _graphics.ApplyChanges();
+
             Window.Title = _sgame.Config.Title;
-                        _sgame.PushScreen(new TestScreen(_sgame));
+            //_sgame.PushScreen(new TestScreen(_sgame));
+            _sgame.PushScreen(new TestMap(_sgame, "Cave1"));
             //            _sgame.PushScreen(new Splash(_sgame));
             //_sgame.PushScreen(new TestUIScreen(_sgame));
             base.Initialize();

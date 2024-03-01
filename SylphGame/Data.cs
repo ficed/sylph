@@ -22,6 +22,15 @@ namespace SylphGame {
         }
 
         public Stream TryOpen(string category, string name) {
+
+            if (!System.IO.Path.GetExtension(name).Equals(".ref", StringComparison.InvariantCultureIgnoreCase)) {
+                using (var sRef = TryOpen(category, name + ".ref")) {
+                    if (sRef != null)
+                        using (var streamReader = new StreamReader(sRef))
+                            return TryOpen(category, streamReader.ReadToEnd().Trim());
+                }
+            }
+
             foreach (string root in _roots) {
                 string fn = Path.Combine(root, category, name);
                 if (File.Exists(fn))
