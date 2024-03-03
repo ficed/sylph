@@ -8,6 +8,16 @@ using System.Threading.Tasks;
 
 namespace SylphGame.Field {
     
+    public enum ScriptPriority {
+        Interrupt = 0,
+        High = 1,
+        Medium = 2,
+        Low = 3,
+        Idle = 4,
+
+        LOWEST_PRIO = Idle,
+    }
+
     public interface IPlayerControl {
         bool CanPlayerMove(MapScreen map, IVector2 newPos);
     }
@@ -29,9 +39,32 @@ namespace SylphGame.Field {
         }
     }
 
+    public class FieldScriptWalk : FieldScriptCondition {
+        private SpriteObject _obj;
+        private IVector2 _target;
+        //TODO speed, etc.
+
+        public FieldScriptWalk(SpriteObject obj, IVector2 target) {
+            _obj = obj;
+            _target = target;
+        }
+
+        public override bool IsFulfilled(MapScreen map) {
+            if (_obj.Position == _target) {
+                //_obj.Sprite.PlayAnimation("Idle", true); //No, leave it up to caller to decide? Hm. TODO.
+                return true;
+            }
+
+            if (_obj.MoveState == null) {
+                map.TryWalk(_obj, (_target - _obj.Position).Direction, true);
+            }
+            return false;
+        }
+    }
+
     public interface IFieldScript {
         void Init(MapScreen map, MapObject obj);
-        IEnumerable<FieldScriptDelay> Run();
+        IEnumerable<FieldScriptCondition> Run();
     }
 
 
@@ -83,9 +116,54 @@ namespace SylphGame.Field {
 
         public void Step() {
         }
+
+        public void SetIdle() {
+            Sprite.PlayAnimation($"Idle{Facing}", true);
+        }
     }
 
+    public class ActiveScripts {
+        private class RunningScript {
+            public IFieldScript Script { get; set; }
+            public IEnumerator<FieldScriptCondition> ScriptEnum { get; set; }
+            public FieldScriptCondition WaitingFor { get; set; }
+        }
 
+        private RunningScript[] _scripts = new RunningScript[(int)ScriptPriority.LOWEST_PRIO + 1];
+
+        public void Run(MapScreen map) {
+            foreach (int prio in Enumerable.Range(0, _scripts.Length)) {
+                var active = _scripts[prio];
+                if (active != null) {
+                    if (active.WaitingFor != null) {
+                        if (active.WaitingFor.IsFulfilled(map)) {
+                            active.WaitingFor = null;
+                        }
+                    } else {
+                        if (active.ScriptEnum.MoveNext()) {
+                            active.WaitingFor = active.ScriptEnum.Current;
+                        } else {
+                            _scripts[prio] = null;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        public void Call(IFieldScript script, ScriptPriority priority, MapScreen map, MapObject obj) => TryCall(script, priority, map, obj);
+        public bool TryCall(IFieldScript script, ScriptPriority priority, MapScreen map, MapObject obj) {
+            if (_scripts[(int)priority] == null) {
+                script.Init(map, obj);
+                _scripts[(int)priority] = new RunningScript {
+                    Script = script,
+                    ScriptEnum = script.Run().GetEnumerator(),
+                };
+                return true;
+            } else
+                return false;
+        }
+    }
 
     public class MapScreen : Screen {
 
@@ -93,10 +171,10 @@ namespace SylphGame.Field {
         protected List<MapObject> _objects = new();
 
         private int _scrollX, _scrollY;
+        private Dictionary<MapObject, ActiveScripts> _scripts = new();
         protected SpriteObject _player;
 
         public MapObject ViewTrackObj { get; set; }
-
         public SGame SGame => _sgame;
 
         protected Layer GetLayer(int index, bool entities) {
@@ -119,6 +197,15 @@ namespace SylphGame.Field {
             ViewTrackObj = _player;
         }
 
+        protected void Call(MapObject obj, ScriptPriority prio, IFieldScript script) {
+            TryCall(obj, prio, script);
+        }
+        protected bool TryCall(MapObject obj, ScriptPriority prio, IFieldScript script) {
+            if (!_scripts.TryGetValue(obj, out var scripts))
+                scripts = _scripts[obj] = new ActiveScripts();
+            return scripts.TryCall(script, prio, this, obj);
+        }
+
         protected void DropToMap(MapObject obj, IVector2 pos) {
             for(int L = _tilemap.LayerCount - 1; L >= 0; L--) {
                 if (_tilemap.GetWalkableTile(pos, L, out var props, out int? newLevel)) {
@@ -136,21 +223,23 @@ namespace SylphGame.Field {
             );
         }
 
-        public bool TryWalk(SpriteObject obj, IVector2 direction) {
+        public bool CanWalk(SpriteObject obj, IVector2 direction, out Facing newFacing, out IVector2 newPos, out int? newLevel) {
+            if (direction.X > 0) //TODO - consider relative X/Y magnitude
+                newFacing = Facing.E;
+            else if (direction.X < 0)
+                newFacing = Facing.W;
+            else if (direction.Y > 0)
+                newFacing = Facing.S;
+            else if (direction.Y < 0)
+                newFacing = Facing.N;
+            else
+                throw new NotImplementedException();
+
             //Get props for our current tile
             if (_tilemap.GetWalkableTile(obj.Position, obj.Layer, out var props, out _)) {
-                var newPos = obj.Position;
+                newPos = obj.Position;
 
-                if (direction.X > 0) //TODO - consider relative X/Y magnitude
-                    obj.Facing = Facing.E;
-                else if (direction.X < 0)
-                    obj.Facing = Facing.W;
-                else if (direction.Y > 0)
-                    obj.Facing = Facing.S;
-                else if (direction.Y < 0)
-                    obj.Facing = Facing.N;
-
-                switch (obj.Facing) {
+                switch (newFacing) {
                     case Facing.E:
                         newPos.X++;
                         if (props.HasFlag(TileProperties.StairsUpE))
@@ -174,19 +263,36 @@ namespace SylphGame.Field {
                     default:
                         throw new NotImplementedException();
                 }
-                obj.Sprite.PlayAnimation($"Walk{obj.Facing}", true);
 
-                if (_tilemap.GetWalkableTile(newPos, obj.Layer, out var newProps, out var newLevel)) {
-                    obj.MoveState = new MoveState {
-                        TargetX = newPos.X,
-                        TargetY = newPos.Y,
-                        OnComplete = () => {
-                            obj.Position = newPos;
-                            obj.Layer = newLevel ?? obj.Layer;
-                        }
-                    };
+                if (_tilemap.GetWalkableTile(newPos, obj.Layer, out var newProps, out newLevel)) {
                     return true;
                 }
+            }
+
+            newFacing = default;
+            newPos = IVector2.Zero;
+            newLevel = null;
+            return false;
+        }
+
+        public bool TryWalk(SpriteObject obj, IVector2 direction, bool animateIfStuck) {
+            if (CanWalk(obj, direction, out var newFacing, out var newPos, out int? newLevel)) {
+                obj.Facing = newFacing;
+                obj.Sprite.PlayAnimation($"Walk{obj.Facing}", true);
+                obj.MoveState = new MoveState {
+                    TargetX = newPos.X,
+                    TargetY = newPos.Y,
+                    OnComplete = () => {
+                        obj.Position = newPos;
+                        obj.Layer = newLevel ?? obj.Layer;
+                    }
+                };
+                return true;
+            }
+
+            if (animateIfStuck) {
+                obj.Facing = newFacing;
+                obj.Sprite.PlayAnimation($"Walk{obj.Facing}", true);
             }
 
             return false;
@@ -236,6 +342,10 @@ namespace SylphGame.Field {
 
         public override void Step() {
             base.Step();
+
+            foreach (var scripts in _scripts.Values)
+                scripts.Run(this);
+
             foreach(var obj in _objects) {
                 if (obj.MoveState != null) {
                     int largest = Math.Max(
@@ -257,9 +367,9 @@ namespace SylphGame.Field {
                 if (_player.MoveState == null) {
                     var direction = _sgame.Input.MovementVector();
                     if ((direction != IVector2.Zero) && CanMoveTo(_player.Layer, _player.Position + direction))
-                        TryWalk(_player, direction);
+                        TryWalk(_player, direction, true);
                     else
-                        _player.Sprite.PlayAnimation($"Idle{_player.Facing}", true);
+                        _player.SetIdle();
                 }
             }
 

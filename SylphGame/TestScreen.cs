@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SylphGame.Field;
 using SylphGame.UI;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,8 @@ namespace SylphGame {
             DropToMap(locke, new IVector2(20, 13));
             locke.Sprite.PlayAnimation("FingerWag", true);
             _objects.Add(locke);
+
+            Call(locke, Field.ScriptPriority.Idle, new WalkRandomlyBehaviour(4, 1, 30, 180));
         }
     }
 
