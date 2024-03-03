@@ -40,8 +40,8 @@ namespace SylphGame {
         public bool IsJustDown(InputButton b) => _downFor[b] == 1;
         public bool IsDownRepeat(InputButton b) => (_downFor[b] % 20) == 1;
 
-        public Vector2 MovementVector() {
-            return new Vector2(
+        public IVector2 MovementVector() {
+            return new IVector2(
                 IsDown(InputButton.Left) ? -1 : IsDown(InputButton.Right) ? 1 : 0,
                 IsDown(InputButton.Up) ? -1 : IsDown(InputButton.Down) ? 1 : 0
             );

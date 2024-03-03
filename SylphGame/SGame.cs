@@ -14,6 +14,9 @@ using System.Xml.Linq;
 
 namespace SylphGame {
 
+    public enum Facing { N, S, E, W };
+
+
     public struct Layer {
         private const int LAYER_COUNT = 32;
         private const float LAYER_AMOUNT = 1f / LAYER_COUNT;
@@ -60,6 +63,7 @@ namespace SylphGame {
         }
 
         private Dictionary<Type, Dictionary<string, WeakReference<ICacheable>>> _cache = new();
+        public Random Random { get; private set; } = new();
 
         public T Load<T>(string which) where T : ICacheable {
             if (!_cache.TryGetValue(typeof(T), out var dict))

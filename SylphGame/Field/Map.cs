@@ -8,6 +8,33 @@ using System.Threading.Tasks;
 
 namespace SylphGame.Field {
     
+    public interface IPlayerControl {
+        bool CanPlayerMove(MapScreen map, IVector2 newPos);
+    }
+
+    public abstract class FieldScriptCondition {
+        public abstract bool IsFulfilled(MapScreen map);
+    }
+
+    public class FieldScriptDelay : FieldScriptCondition {
+        private int _frames;
+
+        public FieldScriptDelay(int frames) {
+            _frames = frames;
+        }
+
+        public override bool IsFulfilled(MapScreen map) {
+            --_frames;
+            return _frames <= 0;
+        }
+    }
+
+    public interface IFieldScript {
+        void Init(MapScreen map, MapObject obj);
+        IEnumerable<FieldScriptDelay> Run();
+    }
+
+
     public class MoveState {
         public int TargetX { get; set; }
         public int TargetY { get; set; }
@@ -28,8 +55,7 @@ namespace SylphGame.Field {
 
     public abstract class MapObject {
         public string ID { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
+        public IVector2 Position { get; set; }
         public ObjectFlags Flags { get; set; } = ObjectFlags.DEFAULT;
         public MoveState MoveState { get; set; }
         public int Layer { get; set; }
@@ -37,8 +63,6 @@ namespace SylphGame.Field {
         public abstract void Render(Vector2 renderPos, SpriteBatch spriteBatch, Layer layer);
         public virtual IEntity Entity => null;
     }
-
-    public enum Facing { N, S, E, W };
 
     public class SpriteObject : MapObject {
 
@@ -59,32 +83,6 @@ namespace SylphGame.Field {
 
         public void Step() {
         }
-
-        public void Walk(Vector2 direction) {
-            string anim;
-            switch (Math.Sign(direction.X)) {
-                case -1:
-                    Facing = Facing.W; break;
-                case +1:
-                    Facing = Facing.E; break;
-                default:
-                    if (Math.Sign(direction.Y) == -1)
-                        Facing = Facing.N;
-                    else
-                        Facing = Facing.S;
-                    break;
-            }
-            Sprite.PlayAnimation($"Walk{Facing}", true);
-            int newX = X + (int)direction.X,
-                newY = Y + (int)direction.Y;
-            MoveState = new MoveState {
-                TargetX = newX,
-                TargetY = newY,
-                OnComplete = () => {
-                    X = newX; Y = newY;
-                }
-            };
-        }
     }
 
 
@@ -99,18 +97,111 @@ namespace SylphGame.Field {
 
         public MapObject ViewTrackObj { get; set; }
 
-        public MapScreen(SGame sgame, string tilemap) : base(sgame) {
-            _tilemap = new TileMap(sgame, tilemap);
+        public SGame SGame => _sgame;
+
+        protected Layer GetLayer(int index, bool entities) {
+            Layer L = Layer.BACKGROUND_BACK;
+            foreach (int i in Enumerable.Range(0, index))
+                L = L.Next.Next.Next;
+            if (entities)
+                L = L.Next;
+            return L;
         }
 
-        protected Vector2 ViewPosFor(MapObject obj) {
-            return ViewPosFor(new Vector2(obj.X, obj.Y));
+        public MapScreen(SGame sgame, string tilemap, string entrypoint) : base(sgame) {
+            _tilemap = new TileMap(sgame, tilemap);
+
+            _tilemap.GetPoint(entrypoint, out var ePos, out int eL);
+
+            _player = new Field.SpriteObject(sgame, "Terra"); //TODO!
+            DropToMap(_player, ePos);
+            _objects.Add(_player);
+            ViewTrackObj = _player;
         }
-        protected Vector2 ViewPosFor(Vector2 mapPos) {
+
+        protected void DropToMap(MapObject obj, IVector2 pos) {
+            for(int L = _tilemap.LayerCount - 1; L >= 0; L--) {
+                if (_tilemap.GetWalkableTile(pos, L, out var props, out int? newLevel)) {
+                    obj.Position = pos;
+                    obj.Layer = newLevel ?? L;
+                }
+            }
+        }
+
+        protected Vector2 ViewPosFor(MapObject obj) => ViewPosFor(obj.Position); //TODO - needed?
+        protected Vector2 ViewPosFor(IVector2 mapPos) {
             return new Vector2(
                 mapPos.X * _tilemap.TileWidth + _scrollX,
                 mapPos.Y * _tilemap.TileHeight + _scrollY
             );
+        }
+
+        public bool TryWalk(SpriteObject obj, IVector2 direction) {
+            //Get props for our current tile
+            if (_tilemap.GetWalkableTile(obj.Position, obj.Layer, out var props, out _)) {
+                var newPos = obj.Position;
+
+                if (direction.X > 0) //TODO - consider relative X/Y magnitude
+                    obj.Facing = Facing.E;
+                else if (direction.X < 0)
+                    obj.Facing = Facing.W;
+                else if (direction.Y > 0)
+                    obj.Facing = Facing.S;
+                else if (direction.Y < 0)
+                    obj.Facing = Facing.N;
+
+                switch (obj.Facing) {
+                    case Facing.E:
+                        newPos.X++;
+                        if (props.HasFlag(TileProperties.StairsUpE))
+                            newPos.Y--;
+                        else if (props.HasFlag(TileProperties.StairsDownE))
+                            newPos.Y++;
+                        break;
+                    case Facing.W:
+                        newPos.X--;
+                        if (props.HasFlag(TileProperties.StairsUpW))
+                            newPos.Y--;
+                        else if (props.HasFlag(TileProperties.StairsDownW))
+                            newPos.Y++;
+                        break;
+                    case Facing.S:
+                        newPos.Y++;
+                        break;
+                    case Facing.N:
+                        newPos.Y--;
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+                obj.Sprite.PlayAnimation($"Walk{obj.Facing}", true);
+
+                if (_tilemap.GetWalkableTile(newPos, obj.Layer, out var newProps, out var newLevel)) {
+                    obj.MoveState = new MoveState {
+                        TargetX = newPos.X,
+                        TargetY = newPos.Y,
+                        OnComplete = () => {
+                            obj.Position = newPos;
+                            obj.Layer = newLevel ?? obj.Layer;
+                        }
+                    };
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool CanMoveTo(int level, IVector2 pos) {
+            var occupied = _objects
+                .Where(obj => obj.Position == pos) //TODO - bigger objects?!
+                .Where(obj => obj.Flags.HasFlag(ObjectFlags.Solid));
+            if (occupied.Any())
+                return false;
+            if (_tilemap.GetWalkableTile(pos, level, out var props, out int? newLevel))
+                return true;
+
+            return false;
         }
 
         protected override IEnumerable<IEntity> GetActiveEntities() {
@@ -127,14 +218,14 @@ namespace SylphGame.Field {
             foreach(int layer in Enumerable.Range(0, _tilemap.LayerCount)) {
                 _tilemap.RenderLayer(spriteBatch, layer, L);
                 L = L.Next;
-                foreach(var obj in _objects.Where(o => o.Layer == layer)) {
+                foreach(var obj in _objects.Where(o => o.Layer == layer).OrderByDescending(o => o.Position.Y)) {
                     var pos = new Vector2(
-                        obj.X * _tilemap.TileWidth, 
-                        obj.Y * _tilemap.TileHeight + _tilemap.TileHeight
+                        obj.Position.X * _tilemap.TileWidth, 
+                        obj.Position.Y * _tilemap.TileHeight + _tilemap.TileHeight
                     );
                     if (obj.MoveState != null) {
-                        pos.X += _tilemap.TileWidth * (obj.MoveState.TargetX - obj.X) * obj.MoveState.Progress;
-                        pos.Y += _tilemap.TileHeight * (obj.MoveState.TargetY - obj.Y) * obj.MoveState.Progress;
+                        pos.X += _tilemap.TileWidth * (obj.MoveState.TargetX - obj.Position.X) * obj.MoveState.Progress;
+                        pos.Y += _tilemap.TileHeight * (obj.MoveState.TargetY - obj.Position.Y) * obj.MoveState.Progress;
                     }
                     obj.Render(pos, spriteBatch, L);
                 }
@@ -148,8 +239,8 @@ namespace SylphGame.Field {
             foreach(var obj in _objects) {
                 if (obj.MoveState != null) {
                     int largest = Math.Max(
-                        Math.Abs((obj.MoveState.TargetX - obj.X) * _tilemap.TileWidth),
-                        Math.Abs((obj.MoveState.TargetY - obj.Y) * _tilemap.TileHeight)
+                        Math.Abs((obj.MoveState.TargetX - obj.Position.X) * _tilemap.TileWidth),
+                        Math.Abs((obj.MoveState.TargetY - obj.Position.Y) * _tilemap.TileHeight)
                     );
                     if (obj.MoveState.Steps == largest) {
                         var ms = obj.MoveState;
@@ -165,8 +256,8 @@ namespace SylphGame.Field {
             if (_player != null) {
                 if (_player.MoveState == null) {
                     var direction = _sgame.Input.MovementVector();
-                    if (direction != Vector2.Zero)
-                        _player.Walk(direction);
+                    if ((direction != IVector2.Zero) && CanMoveTo(_player.Layer, _player.Position + direction))
+                        TryWalk(_player, direction);
                     else
                         _player.Sprite.PlayAnimation($"Idle{_player.Facing}", true);
                 }

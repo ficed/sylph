@@ -10,16 +10,10 @@ using System.Threading.Tasks;
 namespace SylphGame {
 
     public class TestMap : Field.MapScreen {
-        public TestMap(SGame sgame, string tilemap) : base(sgame, tilemap) {
-            _player = new Field.SpriteObject(sgame, "Terra");
-            _player.X = 18;
-            _player.Y = 12;
-            _objects.Add(_player);
-            ViewTrackObj = _player;
+        public TestMap(SGame sgame, string tilemap) : base(sgame, tilemap, "entry1") {
 
             var locke = new Field.SpriteObject(sgame, "Locke");
-            locke.X = 20;
-            locke.Y = 13;
+            DropToMap(locke, new IVector2(20, 13));
             locke.Sprite.PlayAnimation("FingerWag", true);
             _objects.Add(locke);
         }
