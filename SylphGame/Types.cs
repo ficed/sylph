@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -169,5 +171,25 @@ namespace SylphGame {
             }
         }
 
+    }
+
+    public static class Util {
+        public static T LoadJson<T>(Stream s) {
+            var serializer = new JsonSerializer();
+
+            using (var streamReader = new StreamReader(s))
+            using (var jsonReader = new JsonTextReader(streamReader)) {
+                return serializer.Deserialize<T>(jsonReader);
+            }
+        }
+
+        public static object LoadJson(Stream s, Type t) {
+            var serializer = new JsonSerializer();
+
+            using (var streamReader = new StreamReader(s))
+            using (var jsonReader = new JsonTextReader(streamReader)) {
+                return serializer.Deserialize(jsonReader, t);
+            }
+        }
     }
 }

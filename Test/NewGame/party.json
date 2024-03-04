@@ -1,0 +1,20 @@
+{
+  "Frames": 0,
+  "ID": "",
+  "Characters": [
+    {
+      "ID": 1,
+      "Name": "Terra",
+      "SmallImage": "terra-s",
+      "LargeImage": "terra-l"
+    },
+    {
+      "ID": 2,
+      "Name": "Locke",
+      "SmallImage": "locke-s",
+      "LargeImage": "locke-l"
+    }
+  ],
+  "Behaviours": [
+  ]
+} 

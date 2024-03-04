@@ -140,13 +140,8 @@ namespace SylphGame {
         }
 
         public T LoadJson<T>(string category, string file) {
-            var serializer = new JsonSerializer();
-
             using (var s = Data.Open(category, AddExtIfNeeded(file, ".json"))) {
-                using (var streamReader = new StreamReader(s))
-                using (var jsonReader = new JsonTextReader(streamReader)) {
-                    return serializer.Deserialize<T>(jsonReader);
-                }
+                return Util.LoadJson<T>(s); 
             }
         }
 
