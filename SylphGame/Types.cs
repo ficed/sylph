@@ -6,6 +6,103 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SylphGame {
+
+    public struct IRect : IEquatable<IRect> {
+
+        public static readonly IRect Empty = new();
+
+        public int Top { get; set; }
+        public int Left { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+
+        public int Right => Left + Width;
+        public int Bottom => Top + Height;
+        public bool IsEmpty => (Width == 0) && (Height == 0);
+
+        public IRect(int left, int top, int width, int height) {
+            Top = top;
+            Left = left;
+            Width = width;
+            Height = height;
+        }
+
+        public static IRect FromCoords(int left, int top, int right, int bottom) {
+            return new IRect(
+                left,
+                top,
+                right - left,
+                bottom - top
+            );
+        }
+
+        public void Offset(int offsetX, int offsetY) {
+            Left += offsetX;
+            Top += offsetY;
+        }
+        public void Offset(IVector2 offset) {
+            Left += offset.X;
+            Top += offset.Y;
+        }
+        public void Expand(int sizeX, int sizeY) {
+            Width += sizeX;
+            Height += sizeY;
+        }
+
+        public IRect Union(IRect other) {
+            if (IsEmpty)
+                return other;
+            else if (other.IsEmpty)
+                return this;
+            else
+                return FromCoords(
+                    Math.Min(Left, other.Left),
+                    Math.Min(Top, other.Top),
+                    Math.Max(Right, other.Right),
+                    Math.Max(Bottom, other.Bottom)
+                );
+        }
+
+        public IRect Intersect(IRect other) {
+            if (Overlaps(other)) {
+                return FromCoords(
+                    Math.Max(Left, other.Left),
+                    Math.Max(Top, other.Top),
+                    Math.Min(Right, other.Right),
+                    Math.Min(Bottom, other.Bottom)
+                );
+            } else
+                return Empty;
+        }
+
+
+        public bool Equals(IRect other) {
+            return (Top == other.Top) &&
+                (Left == other.Left) &&
+                (Width == other.Width) &&
+                Height == other.Height;
+        }
+
+        public override bool Equals([NotNullWhen(true)] object obj) {
+            if (obj is IRect other)
+                return Equals(other);
+            else
+                return base.Equals(obj);
+        }
+
+        public override int GetHashCode() {
+            return Top ^ Left ^ Width ^ Height;
+        }
+
+        public bool Overlaps(IRect other) {
+            if (Bottom <= other.Top) return false;
+            if (Right <= other.Left) return false;
+            if (Top >= other.Bottom) return false;
+            if (Left >= other.Right) return false; 
+            return true;
+        }
+    }
+
     public struct IVector2 : IEquatable<IVector2> {
 
         public static readonly IVector2 Zero = new IVector2();

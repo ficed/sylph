@@ -18,6 +18,7 @@ namespace SylphGame {
         public string Title { get; set; }
         public float Scale { get; set; }
         public string SplashGraphic { get; set; }
+        public string LoadGraphic { get; set; }
         public UIDefaults UIDefaults { get; set; }
     }
 }

@@ -3,6 +3,7 @@
   "GameID": "test.sylph.ficedula.co.uk",
   "Scale": 3,
   "SplashGraphic": "Splash",
+  "LoadGraphic": "Loading",
   "UIDefaults": {
     "ConfirmSfx": "DC",
     "MoveSfx": "DC",

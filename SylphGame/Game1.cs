@@ -27,8 +27,7 @@ namespace SylphGame {
 
             Window.Title = _sgame.Config.Title;
             //_sgame.PushScreen(new TestScreen(_sgame));
-            _sgame.PushScreen(new TestMap(_sgame, "Cave1"));
-            //            _sgame.PushScreen(new Splash(_sgame));
+            _sgame.PushScreen(new Splash(_sgame));
             //_sgame.PushScreen(new TestUIScreen(_sgame));
             base.Initialize();
         }

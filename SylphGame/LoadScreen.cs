@@ -7,29 +7,28 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SylphGame {
-    public class Splash : Screen {
-
+    public class LoadScreen : Screen {
         private Texture2D _tex;
+        private Action _init;
 
-        public Splash(SGame sgame) : base(sgame) {
-            _tex = sgame.LoadTex("UI", sgame.Config.SplashGraphic);
-            _entities.Add(FadeEffect.In(60));
+        public LoadScreen(SGame sgame, Action init) : base(sgame) {
+            _tex = sgame.LoadTex("UI", sgame.Config.LoadGraphic);
+            _init = init;
         }
 
         protected override void Render(SpriteBatch spriteBatch) {
             base.Render(spriteBatch);
             spriteBatch.Draw(
-                _tex, 
-                new Rectangle(0, 0, (int)(1280 / _sgame.Config.Scale), (int)(240 / _sgame.Config.Scale)), 
+                _tex,
+                new Rectangle(0, 0, (int)(_tex.Width / _sgame.Config.Scale), (int)(_tex.Height / _sgame.Config.Scale)),
                 Color.White
             );
         }
 
         public override void Step() {
             base.Step();
-            _sgame.PushScreen(new LoadScreen(_sgame,
-                () => _sgame.PushScreen(new TestMap(_sgame, "Cave1"))
-            ));
+            _init?.Invoke();
+            _init = null;
         }
     }
 }

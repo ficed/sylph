@@ -19,6 +19,14 @@ namespace SylphGame.Field {
         StairsDownW = 0x10,
     }
 
+    [Flags]
+    public enum TileObjectFlags {
+        None = 0,
+        ShiftLeft = 0x1,
+        ShiftRight = 0x2,
+        Hidden = 0x4,
+    }
+
     public class TsjTileset {
         public int Columns { get; set; }
         public string Image { get; set; }
@@ -131,6 +139,7 @@ namespace SylphGame.Field {
         private TmjMap _map;
         private List<MergedLayer> _layers = new();
         private Dictionary<int, (Rectangle SrcRect, Texture2D Tex, TsjTile Tile)> _tiles = new();
+        private Dictionary<string, TileObjectFlags> _objFlags = new(StringComparer.InvariantCultureIgnoreCase);
 
         public int LayerCount => _layers.Count;
         public int TileWidth => _map.TileWidth;
@@ -170,6 +179,14 @@ namespace SylphGame.Field {
             }
         }
 
+        public void ChangeObject(string objName, TileObjectFlags toSet, TileObjectFlags toClear) {
+            if (!_objFlags.TryGetValue(objName, out var flags))
+                flags = TileObjectFlags.None;
+            flags |= toSet;
+            flags &= ~toClear;
+            _objFlags[objName] = flags;
+        }
+
         public bool GetWalkableTile(IVector2 pos, int level, out TileProperties props, out int? newLevel) {
             newLevel = null; //TODO
             var layer = _layers[level].Tiles;
@@ -186,6 +203,26 @@ namespace SylphGame.Field {
 
             props = default;
             return false;
+        }
+
+        public IRect GetObjectBounds(string name) {
+            var bounds = IRect.Empty;
+            foreach (var layer in _layers) {
+                if (layer.Objects != null) {
+                    foreach(var obj in layer.Objects.Objects.Where(o => o.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))) {
+                        var objBounds = new IRect(
+                            (layer.Objects.X + (int)obj.X) / _map.TileWidth,
+                            (layer.Objects.Y + (int)obj.Y) / _map.TileHeight,
+                            obj.Width / _map.TileWidth,
+                            obj.Height / _map.TileHeight
+                        );
+                        if (obj.Gid != 0) //Tiles which go up from origin, not down
+                            objBounds.Offset(0, -1);
+                        bounds = bounds.Union(objBounds);
+                    }
+                }
+            }
+            return bounds;
         }
 
         public bool GetPoint(string name, out IVector2 pos, out int layer) {
@@ -215,12 +252,18 @@ namespace SylphGame.Field {
             int index = 0;
             int ox = 0, oy = 0;
 
-            void TryDrawTile(int tile, int xOffset, int yOffset) {
+            void TryDrawTile(int tile, int xOffset, int yOffset, TileObjectFlags flags) {
                 if (_tiles.TryGetValue(tile, out var tiledata)) {
+                    var src = tiledata.SrcRect;
+                    if (flags.HasFlag(TileObjectFlags.ShiftLeft))
+                        src.Offset(-src.Width, 0);
+                    else if (flags.HasFlag(TileObjectFlags.ShiftRight))
+                        src.Offset(src.Width, 0);
+
                     spriteBatch.Draw(
                         tiledata.Tex,
                         new Rectangle(xOffset, yOffset, _map.TileWidth, _map.TileHeight),
-                        tiledata.SrcRect,
+                        src,
                         Color.White,
                         0, Vector2.Zero, SpriteEffects.None,
                         depth
@@ -230,7 +273,7 @@ namespace SylphGame.Field {
 
             foreach (int tile in layer.Tiles.Data) {
                 if (tile != 0)
-                    TryDrawTile(tile, ox + layer.Tiles.X, oy + layer.Tiles.Y);
+                    TryDrawTile(tile, ox + layer.Tiles.X, oy + layer.Tiles.Y, TileObjectFlags.None);
                 index++;
                 if ((index % layer.Tiles.Width) == 0) {
                     ox = 0;
@@ -241,8 +284,20 @@ namespace SylphGame.Field {
 
             if (layer.Objects != null) {
                 foreach (var tobj in layer.Objects.Objects) {
-                    if (tobj.Gid != 0)
-                        TryDrawTile(tobj.Gid, layer.Objects.X + (int)tobj.X, layer.Objects.Y + (int)tobj.Y - _map.TileHeight);
+                    if (!_objFlags.TryGetValue(tobj.Name, out var flags))
+                        flags = TileObjectFlags.None;
+
+                    if (flags.HasFlag(TileObjectFlags.Hidden))
+                        continue;
+
+                    if (tobj.Gid != 0) {
+                        TryDrawTile(
+                            tobj.Gid, 
+                            layer.Objects.X + (int)tobj.X, 
+                            layer.Objects.Y + (int)tobj.Y - _map.TileHeight,
+                            flags
+                        );
+                    }
                 }
             }
 

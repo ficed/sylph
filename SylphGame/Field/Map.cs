@@ -97,12 +97,29 @@ namespace SylphGame.Field {
         public virtual IEntity Entity => null;
     }
 
+    public class TileMapObject : MapObject {
+
+        public IRect Bounds { get; private set; }
+
+        public TileMapObject(MapScreen map, string id) { 
+            Bounds = map.Tilemap.GetObjectBounds(id);
+            ID = id;
+        }
+
+        public override void Render(Vector2 renderPos, SpriteBatch spriteBatch, Layer layer) {
+            //
+        }
+    }
+
+
     public class SpriteObject : MapObject {
 
         public Entities.Sprite.Instance Sprite { get; private set; }
         public Facing Facing { get; set; }
 
         public override IEntity Entity => Sprite;
+
+        public IRect Bounds => new IRect(Position.X, Position.Y, 1, 1); //TODO!
 
         public SpriteObject(SGame sgame, string sprite) {
             Sprite = sgame.Load<Entities.Sprite>(sprite).New();
@@ -167,13 +184,13 @@ namespace SylphGame.Field {
 
     public class MapScreen : Screen {
 
-        protected TileMap _tilemap;
         protected List<MapObject> _objects = new();
 
         private int _scrollX, _scrollY;
         private Dictionary<MapObject, ActiveScripts> _scripts = new();
-        protected SpriteObject _player;
 
+        public SpriteObject Player { get; set; }
+        public TileMap Tilemap { get; private set; }
         public MapObject ViewTrackObj { get; set; }
         public SGame SGame => _sgame;
 
@@ -187,14 +204,19 @@ namespace SylphGame.Field {
         }
 
         public MapScreen(SGame sgame, string tilemap, string entrypoint) : base(sgame) {
-            _tilemap = new TileMap(sgame, tilemap);
+            Tilemap = new TileMap(sgame, tilemap);
 
-            _tilemap.GetPoint(entrypoint, out var ePos, out int eL);
+            Tilemap.GetPoint(entrypoint, out var ePos, out int eL);
 
-            _player = new Field.SpriteObject(sgame, "Terra"); //TODO!
-            DropToMap(_player, ePos);
-            _objects.Add(_player);
-            ViewTrackObj = _player;
+            Player = new Field.SpriteObject(sgame, "Terra"); //TODO!
+            DropToMap(Player, ePos);
+            _objects.Add(Player);
+            ViewTrackObj = Player;
+            RegisterEffect(FadeEffect.In(30));
+        }
+
+        public void RegisterEffect(IEntity effect) {
+            _entities.Add(effect);
         }
 
         protected void Call(MapObject obj, ScriptPriority prio, IFieldScript script) {
@@ -207,8 +229,8 @@ namespace SylphGame.Field {
         }
 
         protected void DropToMap(MapObject obj, IVector2 pos) {
-            for(int L = _tilemap.LayerCount - 1; L >= 0; L--) {
-                if (_tilemap.GetWalkableTile(pos, L, out var props, out int? newLevel)) {
+            for(int L = Tilemap.LayerCount - 1; L >= 0; L--) {
+                if (Tilemap.GetWalkableTile(pos, L, out var props, out int? newLevel)) {
                     obj.Position = pos;
                     obj.Layer = newLevel ?? L;
                 }
@@ -218,8 +240,8 @@ namespace SylphGame.Field {
         protected Vector2 ViewPosFor(MapObject obj) => ViewPosFor(obj.Position); //TODO - needed?
         protected Vector2 ViewPosFor(IVector2 mapPos) {
             return new Vector2(
-                mapPos.X * _tilemap.TileWidth + _scrollX,
-                mapPos.Y * _tilemap.TileHeight + _scrollY
+                mapPos.X * Tilemap.TileWidth + _scrollX,
+                mapPos.Y * Tilemap.TileHeight + _scrollY
             );
         }
 
@@ -236,7 +258,7 @@ namespace SylphGame.Field {
                 throw new NotImplementedException();
 
             //Get props for our current tile
-            if (_tilemap.GetWalkableTile(obj.Position, obj.Layer, out var props, out _)) {
+            if (Tilemap.GetWalkableTile(obj.Position, obj.Layer, out var props, out _)) {
                 newPos = obj.Position;
 
                 switch (newFacing) {
@@ -264,7 +286,7 @@ namespace SylphGame.Field {
                         throw new NotImplementedException();
                 }
 
-                if (_tilemap.GetWalkableTile(newPos, obj.Layer, out var newProps, out newLevel)) {
+                if (Tilemap.GetWalkableTile(newPos, obj.Layer, out var newProps, out newLevel)) {
                     return true;
                 }
             }
@@ -304,14 +326,17 @@ namespace SylphGame.Field {
                 .Where(obj => obj.Flags.HasFlag(ObjectFlags.Solid));
             if (occupied.Any())
                 return false;
-            if (_tilemap.GetWalkableTile(pos, level, out var props, out int? newLevel))
+            if (Tilemap.GetWalkableTile(pos, level, out var props, out int? newLevel))
                 return true;
 
             return false;
         }
 
         protected override IEnumerable<IEntity> GetActiveEntities() {
-            return _objects.Select(o => o.Entity).Where(e => e != null);
+            return _objects
+                .Select(o => o.Entity)
+                .Where(e => e != null)
+                .Concat(_entities);
         }
 
         protected override Matrix GetTransform() {
@@ -321,23 +346,27 @@ namespace SylphGame.Field {
         protected override void Render(SpriteBatch spriteBatch) {
             //base.Render(spriteBatch);
             Layer L = Layer.BACKGROUND_BACK;
-            foreach(int layer in Enumerable.Range(0, _tilemap.LayerCount)) {
-                _tilemap.RenderLayer(spriteBatch, layer, L);
+            foreach(int layer in Enumerable.Range(0, Tilemap.LayerCount)) {
+                Tilemap.RenderLayer(spriteBatch, layer, L);
                 L = L.Next;
                 foreach(var obj in _objects.Where(o => o.Layer == layer).OrderByDescending(o => o.Position.Y)) {
                     var pos = new Vector2(
-                        obj.Position.X * _tilemap.TileWidth, 
-                        obj.Position.Y * _tilemap.TileHeight + _tilemap.TileHeight
+                        obj.Position.X * Tilemap.TileWidth, 
+                        obj.Position.Y * Tilemap.TileHeight + Tilemap.TileHeight
                     );
                     if (obj.MoveState != null) {
-                        pos.X += _tilemap.TileWidth * (obj.MoveState.TargetX - obj.Position.X) * obj.MoveState.Progress;
-                        pos.Y += _tilemap.TileHeight * (obj.MoveState.TargetY - obj.Position.Y) * obj.MoveState.Progress;
+                        pos.X += Tilemap.TileWidth * (obj.MoveState.TargetX - obj.Position.X) * obj.MoveState.Progress;
+                        pos.Y += Tilemap.TileHeight * (obj.MoveState.TargetY - obj.Position.Y) * obj.MoveState.Progress;
                     }
                     obj.Render(pos, spriteBatch, L);
                 }
                 L = L.Next;
                 L = L.Next;
             }
+
+            foreach (var ent in _entities) //effects, etc.
+                ent.Render(spriteBatch);
+
         }
 
         public override void Step() {
@@ -349,8 +378,8 @@ namespace SylphGame.Field {
             foreach(var obj in _objects) {
                 if (obj.MoveState != null) {
                     int largest = Math.Max(
-                        Math.Abs((obj.MoveState.TargetX - obj.Position.X) * _tilemap.TileWidth),
-                        Math.Abs((obj.MoveState.TargetY - obj.Position.Y) * _tilemap.TileHeight)
+                        Math.Abs((obj.MoveState.TargetX - obj.Position.X) * Tilemap.TileWidth),
+                        Math.Abs((obj.MoveState.TargetY - obj.Position.Y) * Tilemap.TileHeight)
                     );
                     if (obj.MoveState.Steps == largest) {
                         var ms = obj.MoveState;
@@ -363,13 +392,13 @@ namespace SylphGame.Field {
                 }
             }
 
-            if (_player != null) {
-                if (_player.MoveState == null) {
+            if (Player != null) {
+                if (Player.MoveState == null) {
                     var direction = _sgame.Input.MovementVector();
-                    if ((direction != IVector2.Zero) && CanMoveTo(_player.Layer, _player.Position + direction))
-                        TryWalk(_player, direction, true);
+                    if ((direction != IVector2.Zero) && CanMoveTo(Player.Layer, Player.Position + direction))
+                        TryWalk(Player, direction, true);
                     else
-                        _player.SetIdle();
+                        Player.SetIdle();
                 }
             }
 

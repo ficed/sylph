@@ -53,7 +53,7 @@ namespace SylphGame {
         }
 
         public virtual void Step() {
-            var current = GetActiveEntities();
+            var current = GetActiveEntities().ToArray();
             foreach(var ent in current) {
                 if ((ent is ITransientEntity trEnt) && trEnt.IsComplete)
                     RemoveEntity(ent);

@@ -19,6 +19,9 @@ namespace SylphGame {
             _objects.Add(locke);
 
             Call(locke, Field.ScriptPriority.Idle, new WalkRandomlyBehaviour(4, 1, 30, 180));
+
+            var door1 = new Field.TileMapObject(this, "Door1");
+            Call(door1, ScriptPriority.Idle, new DoorBehaviour(TileObjectFlags.ShiftLeft, "TestMap2.Entry1", "2C"));
         }
     }
 
