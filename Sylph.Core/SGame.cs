@@ -1,15 +1,12 @@
 ﻿using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace SylphGame {
@@ -62,8 +59,10 @@ namespace SylphGame {
             SGame.Register((sg, str) => new LoadedSfx(sg, str));
         }
 
+
         private Dictionary<Type, Dictionary<string, WeakReference<ICacheable>>> _cache = new();
         public Random Random { get; private set; } = new();
+        public Characters.Party Party { get; private set; }
 
         public T Load<T>(string which) where T : ICacheable {
             if (!_cache.TryGetValue(typeof(T), out var dict))
@@ -90,7 +89,7 @@ namespace SylphGame {
 
         public Vector2 ScreenBounds => new Vector2(1280f / Config.Scale, 720f / Config.Scale);
 
-        public SGame(IEnumerable<string> roots, GraphicsDevice graphics) {
+        public SGame(IEnumerable<string> roots, GraphicsDevice graphics, Func<Screen> launch) {
             Data = new Data(roots);
             Graphics = graphics;
 
@@ -107,10 +106,19 @@ namespace SylphGame {
             DefaultFont = Fonts.GetFont(16 * Config.Scale);
 
             Boxes = new UI.Boxes(this);
+
+            PushScreen(new Splash(launch));
         }
 
+        public void PushScreen<T>() where T : Screen, new() {
+            var s = new T();
+            _screens.Push(s);
+            s.Init(this);
+            ActiveScreen.Activated();
+        }
         public void PushScreen(Screen s) {
             _screens.Push(s);
+            s.Init(this);
             ActiveScreen.Activated();
         }
 
@@ -144,6 +152,34 @@ namespace SylphGame {
                 return Util.LoadJson<T>(s); 
             }
         }
+
+        private void DoLoad(Func<string, Stream> getReadable) {
+            Party = Characters.Party.Load(getReadable);
+        }
+
+        private void DoSave(string path) {
+            Directory.CreateDirectory(path);
+            Party.Save(s => new FileStream(Path.Combine(path, s), FileMode.Create));
+        }
+
+        private string SlotPath(int slot) {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Sylph",
+                Config.GameID,
+                $"save{slot}"
+            );
+        }
+
+        public void NewGame() {
+            DoLoad(s => Data.Open("NewGame", s));
+            Party.ID = Guid.NewGuid().ToString("N");
+        }
+        public void LoadGame(int slot) {
+            DoLoad(s => File.OpenRead(Path.Combine(SlotPath(slot), s)));
+        }
+
+        public void SaveGame(int slot) => DoSave(SlotPath(slot));
 
     }
 

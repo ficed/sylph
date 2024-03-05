@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SylphGame {
+
     public abstract class Screen {
         private SpriteBatch _spriteBatch;
 
@@ -22,7 +23,7 @@ namespace SylphGame {
 
         public virtual Color Background => Color.CornflowerBlue;
 
-        public Screen(SGame sgame) {
+        public virtual void Init(SGame sgame) {
             _sgame = sgame;
             _spriteBatch = new SpriteBatch(_sgame.Graphics);
         }

@@ -184,10 +184,17 @@ namespace SylphGame.Field {
 
     public class MapScreen : Screen {
 
+        public static T Get<T>(string entrypoint) where T : MapScreen, new() {
+            T t = new T();
+            t.Setup(entrypoint);
+            return t;
+        }
+
         protected List<MapObject> _objects = new();
 
         private int _scrollX, _scrollY;
         private Dictionary<MapObject, ActiveScripts> _scripts = new();
+        protected string _tilemap, _entrypoint;
 
         public SpriteObject Player { get; set; }
         public TileMap Tilemap { get; private set; }
@@ -203,10 +210,16 @@ namespace SylphGame.Field {
             return L;
         }
 
-        public MapScreen(SGame sgame, string tilemap, string entrypoint) : base(sgame) {
-            Tilemap = new TileMap(sgame, tilemap);
+        public virtual void Setup(string entrypoint) {
+            _entrypoint = entrypoint;   
+        }
 
-            Tilemap.GetPoint(entrypoint, out var ePos, out int eL);
+        public override void Init(SGame sgame) {
+            base.Init(sgame);
+            
+            Tilemap = new TileMap(sgame, _tilemap);
+
+            Tilemap.GetPoint(_entrypoint, out var ePos, out int eL);
 
             Player = new Field.SpriteObject(sgame, "Terra"); //TODO!
             DropToMap(Player, ePos);

@@ -9,11 +9,10 @@ using System.Threading.Tasks;
 namespace SylphGame {
     public class LoadScreen : Screen {
         private Texture2D _tex;
-        private Action _init;
 
-        public LoadScreen(SGame sgame, Action init) : base(sgame) {
+        public override void Init(SGame sgame) {
+            base.Init(sgame);
             _tex = sgame.LoadTex("UI", sgame.Config.LoadGraphic);
-            _init = init;
         }
 
         protected override void Render(SpriteBatch spriteBatch) {
@@ -27,8 +26,6 @@ namespace SylphGame {
 
         public override void Step() {
             base.Step();
-            _init?.Invoke();
-            _init = null;
         }
     }
 }

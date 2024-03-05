@@ -174,21 +174,31 @@ namespace SylphGame {
     }
 
     public static class Util {
-        public static T LoadJson<T>(Stream s) {
-            var serializer = new JsonSerializer();
 
+        private static JsonSerializer _serializer = new JsonSerializer {
+            Converters = {
+                new Newtonsoft.Json.Converters.StringEnumConverter()
+            }
+        };
+
+        public static void SaveJson(object o, Stream s) {
+            using (var streamWriter = new StreamWriter(s))
+            using (var jsonWriter = new JsonTextWriter(streamWriter)) {
+                _serializer.Serialize(jsonWriter, o);
+            }
+        }
+
+        public static T LoadJson<T>(Stream s) {
             using (var streamReader = new StreamReader(s))
             using (var jsonReader = new JsonTextReader(streamReader)) {
-                return serializer.Deserialize<T>(jsonReader);
+                return _serializer.Deserialize<T>(jsonReader);
             }
         }
 
         public static object LoadJson(Stream s, Type t) {
-            var serializer = new JsonSerializer();
-
             using (var streamReader = new StreamReader(s))
             using (var jsonReader = new JsonTextReader(streamReader)) {
-                return serializer.Deserialize(jsonReader, t);
+                return _serializer.Deserialize(jsonReader, t);
             }
         }
     }

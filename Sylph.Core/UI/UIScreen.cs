@@ -15,9 +15,6 @@ namespace SylphGame.UI {
         private Texture2D _cursor;
         private LoadedSfx _sfxMove, _sfxConfirm, _sfxCancel;
 
-        public UIScreen(SGame sgame) : base(sgame) {
-        }
-
         public override void Activated() {
             base.Activated();
             _container.Init(_sgame);

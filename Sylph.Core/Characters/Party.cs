@@ -30,6 +30,13 @@ namespace SylphGame.Characters {
                 }
             }
         }
+        public void SaveBehaviours(Func<string, Stream> getWritable) {
+            foreach (var behaviour in _behaviours.Values) {
+                using (var bs = getWritable(behaviour.GetType().Name + ".json")) {
+                    Util.SaveJson(behaviour, bs);
+                }
+            }
+        }
     }
 
 
@@ -48,8 +55,8 @@ namespace SylphGame.Characters {
         public static Party Load(Func<string, Stream> getReadable) {
             using (var s = getReadable("party.json")) {
                 var party = Util.LoadJson<Party>(s);
-                party.LoadBehaviours(getReadable); 
-                foreach(var chr in party.Characters) {
+                party.LoadBehaviours(getReadable);
+                foreach (var chr in party.Characters) {
                     chr.LoadBehaviours(str => getReadable(chr.ID + "." + str));
                 }
                 return party;
@@ -57,7 +64,12 @@ namespace SylphGame.Characters {
         }
 
         public void Save(Func<string, Stream> getWritable) {
-
+            using (var s = getWritable("party.json"))
+                Util.SaveJson(this, s);
+            SaveBehaviours(getWritable);
+            foreach (var chr in Characters) {
+                chr.SaveBehaviours(str => getWritable(chr.ID + "." + str));
+            }
         }
     }
 }

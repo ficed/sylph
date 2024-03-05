@@ -1,3 +1,5 @@
-﻿
-using var game = new SylphGame.Game1();
-game.Run();
+﻿using SylphGame;
+using SylphGame.Field;
+
+using (var game = new Sylph.Core.SylphGame(() => MapScreen.Get<TestMap>("Entry1")))
+    game.Run();

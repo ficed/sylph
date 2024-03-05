@@ -1,39 +1,39 @@
-﻿using FontStashSharp;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using SylphGame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace SylphGame {
-    public class Game1 : Game {
+namespace Sylph.Core {
+    public class SylphGame : Game {
         private GraphicsDeviceManager _graphics;
-        private SGame _sgame;
+        private Func<Screen> _launch;
 
-        public Game1() {
+        public SGame SGame { get; private set; }
+
+        public SylphGame(Func<Screen> launch) {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-
+            _launch = launch;
         }
 
         protected override void Initialize() {
-            _sgame = new SGame(Environment.GetCommandLineArgs().Skip(1), GraphicsDevice);
-            _sgame.DPIScale = Math.Max(1, _graphics.GraphicsDevice.DisplayMode.Width / 1280);
-            _graphics.PreferredBackBufferWidth = 1280 * _sgame.DPIScale;
-            _graphics.PreferredBackBufferHeight = 720 * _sgame.DPIScale;
+            SGame = new SGame(Environment.GetCommandLineArgs().Skip(1), GraphicsDevice, _launch);
+            SGame.DPIScale = Math.Max(1, _graphics.GraphicsDevice.DisplayMode.Width / 1280);
+            _graphics.PreferredBackBufferWidth = 1280 * SGame.DPIScale;
+            _graphics.PreferredBackBufferHeight = 720 * SGame.DPIScale;
             _graphics.ApplyChanges();
 
-            Window.Title = _sgame.Config.Title;
-            //_sgame.PushScreen(new TestScreen(_sgame));
-            _sgame.PushScreen(new Splash(_sgame));
-            //_sgame.PushScreen(new TestUIScreen(_sgame));
+            Window.Title = SGame.Config.Title;
             base.Initialize();
         }
 
         protected override void LoadContent() {
-           
+
         }
 
         private Dictionary<Keys, InputButton> _inputMap = new Dictionary<Keys, InputButton> {
@@ -54,21 +54,21 @@ namespace SylphGame {
         protected override void Update(GameTime gameTime) {
             foreach (var button in _inputMap.Values)
                 _inputDown[button] = false;
-            foreach(var key in Keyboard.GetState().GetPressedKeys()) {
+            foreach (var key in Keyboard.GetState().GetPressedKeys()) {
                 if (_inputMap.TryGetValue(key, out var button))
                     _inputDown[button] = true;
             }
-            _sgame.Input.Update(_inputDown);
+            SGame.Input.Update(_inputDown);
 
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
-            _sgame.ActiveScreen.Step();
+            SGame.ActiveScreen.Step();
 
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime) {
-            _sgame.ActiveScreen.Render();
+            SGame.ActiveScreen.Render();
             base.Draw(gameTime);
         }
     }

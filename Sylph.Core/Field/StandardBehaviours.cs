@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SylphGame.Field {
 
-    public class DoorBehaviour : IFieldScript {
+    public class DoorBehaviour<T> : IFieldScript where T : MapScreen, new() {
 
         private TileObjectFlags _flags;
         private string _dest, _sfx;
@@ -37,10 +37,9 @@ namespace SylphGame.Field {
                     _loadedSfx.Play();
                     _map.Tilemap.ChangeObject(_obj.ID, _flags, TileObjectFlags.None);
 
-                    string[] dest = _dest.Split('.');
                     _map.RegisterEffect(FadeEffect.Out(30, () => {
                         _map.SGame.PopScreen(_map);
-                        _map.SGame.PushScreen(new MapScreen(_map.SGame, dest[0], dest[1]));
+                        _map.SGame.PushScreen(MapScreen.Get<T>(_dest));
                     }));
                     break;
                 }
