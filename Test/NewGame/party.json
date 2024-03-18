@@ -6,13 +6,25 @@
       "ID": 1,
       "Name": "Terra",
       "SmallImage": "terra-s",
-      "LargeImage": "terra-l"
+      "LargeImage": "terra-l",
+      "Flags": "InParty, Available",
+      "Behaviours": [
+        "SylphGame.Characters.CoreBattle, SylphGame, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "SylphGame.Characters.CoreEquipment, SylphGame, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "SylphGame.Characters.Magic, SylphGame, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+      ]
     },
     {
       "ID": 2,
       "Name": "Locke",
       "SmallImage": "locke-s",
-      "LargeImage": "locke-l"
+      "LargeImage": "locke-l",
+      "Flags": "InParty, Available",
+      "Behaviours": [
+        "SylphGame.Characters.CoreBattle, SylphGame, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "SylphGame.Characters.CoreEquipment, SylphGame, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "SylphGame.Characters.Thief, SylphGame, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+      ]
     }
   ],
   "Behaviours": [

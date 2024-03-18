@@ -52,6 +52,9 @@ namespace SylphGame.Characters {
         public Dictionary<string, string> SFlags { get; set; } = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         public List<Character> Characters { get; set; } = new();
 
+        [JsonIgnore]
+        public IEnumerable<Character> ActiveChars => Characters.Where(c => c.Flags.HasFlag(StandardCharacterFlags.InParty));
+
         public static Party Load(Func<string, Stream> getReadable) {
             using (var s = getReadable("party.json")) {
                 var party = Util.LoadJson<Party>(s);

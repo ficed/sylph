@@ -38,5 +38,14 @@ namespace SylphGame {
             }
             return null;
         }
+
+        public IEnumerable<string> Scan(string category, string ext) {
+            foreach (string root in _roots) {
+                string dir = Path.Combine(root, category);
+                if (Directory.Exists(dir))
+                    foreach (string file in Directory.GetFiles(dir, "*" + ext))
+                        yield return Path.GetFileName(file);
+            }
+        }
     }
 }

@@ -15,6 +15,8 @@ namespace SylphGame.UI {
         private Texture2D _cursor;
         private LoadedSfx _sfxMove, _sfxConfirm, _sfxCancel;
 
+        protected static Prop<T> Dyn<T>(Func<T> getValue) => getValue;
+
         public override void Activated() {
             base.Activated();
             _container.Init(_sgame);
@@ -65,7 +67,7 @@ namespace SylphGame.UI {
 
         protected override void Render(SpriteBatch spriteBatch) {
             base.Render(spriteBatch);
-            _container.Render(spriteBatch, Layer.UI_BACK);
+            _container.Render(spriteBatch, Layer.UI_BACK, 0, 0);
             if (_focus != null) {
                 spriteBatch.Draw(
                     _cursor, new Vector2(_focus.X.Value - _cursor.Width - 1, _focus.Y.Value + 2), Color.White
@@ -83,11 +85,23 @@ namespace SylphGame.UI {
             return component;
         }
 
-        protected Label Label(Prop<int> x, Prop<int> y, Prop<string> text) {
+        protected Label Label(Prop<int> x, Prop<int> y, Prop<string> text, Prop<TextAlign>? alignment = null) {
             return new Label {
                 X = x,
                 Y = y,
                 Text = text,
+                Alignment = alignment ?? TextAlign.Left,
+            };
+        }
+
+        protected Gauge Gauge(Prop<int> x, Prop<int> y, Prop<int> w, Prop<int> h, Prop<int> value, Prop<int> max) {
+            return new Gauge {
+                X = x,
+                Y = y,
+                W = w,
+                H = h,
+                Value = value,
+                Max = max
             };
         }
 

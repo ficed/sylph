@@ -182,6 +182,14 @@ namespace SylphGame.Field {
         }
     }
 
+    [Flags]
+    public enum MapOptions {
+        None = 0,
+        NoMenu = 0x1,
+
+        NoInteraction = 0x1000,
+    }
+
     public class MapScreen : Screen {
 
         public static T Get<T>(string entrypoint) where T : MapScreen, new() {
@@ -196,6 +204,7 @@ namespace SylphGame.Field {
         private Dictionary<MapObject, ActiveScripts> _scripts = new();
         protected string _tilemap, _entrypoint;
 
+        public MapOptions Options { get; set; } = MapOptions.None;
         public SpriteObject Player { get; set; }
         public TileMap Tilemap { get; private set; }
         public MapObject ViewTrackObj { get; set; }
@@ -405,16 +414,6 @@ namespace SylphGame.Field {
                 }
             }
 
-            if (Player != null) {
-                if (Player.MoveState == null) {
-                    var direction = _sgame.Input.MovementVector();
-                    if ((direction != IVector2.Zero) && CanMoveTo(Player.Layer, Player.Position + direction))
-                        TryWalk(Player, direction, true);
-                    else
-                        Player.SetIdle();
-                }
-            }
-
             if (ViewTrackObj != null) {
                 var pos = ViewPosFor(ViewTrackObj);
                 float xMargin = _sgame.ScreenBounds.X / 4,
@@ -428,6 +427,26 @@ namespace SylphGame.Field {
                     _scrollY++;
                 else if (pos.Y > (_sgame.ScreenBounds.Y - yMargin))
                     _scrollY--;
+            }
+
+            if (Options.HasFlag(MapOptions.NoInteraction))
+                return;
+
+            if (_sgame.Input.IsJustDown(InputButton.Menu) && !Options.HasFlag(MapOptions.NoMenu)) {
+                Options |= MapOptions.NoInteraction;
+                RegisterEffect(FadeEffect.Out(30, () => {
+                    _sgame.MainMenu();
+                }));
+            }
+
+            if (Player != null) {
+                if (Player.MoveState == null) {
+                    var direction = _sgame.Input.MovementVector();
+                    if ((direction != IVector2.Zero) && CanMoveTo(Player.Layer, Player.Position + direction))
+                        TryWalk(Player, direction, true);
+                    else
+                        Player.SetIdle();
+                }
             }
         }
     }

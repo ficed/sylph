@@ -16,6 +16,7 @@ namespace SylphGame.Characters {
         Stop = 0x10,
         Blind = 0x20,
         Mute = 0x40,
+        BackRow = 0x100,
     }
 
     public class CoreBattle : ICharBehaviour {
@@ -26,6 +27,8 @@ namespace SylphGame.Characters {
         public int CurrentMP { get; set; }
         public int MaxMP { get; set; }
         public CoreStatuses Statuses { get; set; }
+
+        public static implicit operator CoreBattle(Character c) => c.As<CoreBattle>();
     }
 
     public class CoreEquipment : ICharBehaviour {

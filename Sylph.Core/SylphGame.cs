@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SylphGame;
 using System;
@@ -10,11 +11,11 @@ using System.Threading.Tasks;
 namespace Sylph.Core {
     public class SylphGame : Game {
         private GraphicsDeviceManager _graphics;
-        private Func<Screen> _launch;
+        private Func<GraphicsDevice, SGame> _launch;
 
         public SGame SGame { get; private set; }
 
-        public SylphGame(Func<Screen> launch) {
+        public SylphGame(Func<GraphicsDevice, SGame> launch) {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
@@ -22,7 +23,7 @@ namespace Sylph.Core {
         }
 
         protected override void Initialize() {
-            SGame = new SGame(Environment.GetCommandLineArgs().Skip(1), GraphicsDevice, _launch);
+            SGame = _launch(_graphics.GraphicsDevice);
             SGame.DPIScale = Math.Max(1, _graphics.GraphicsDevice.DisplayMode.Width / 1280);
             _graphics.PreferredBackBufferWidth = 1280 * SGame.DPIScale;
             _graphics.PreferredBackBufferHeight = 720 * SGame.DPIScale;

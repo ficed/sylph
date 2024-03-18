@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Xna.Framework;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -201,5 +202,11 @@ namespace SylphGame {
                 return _serializer.Deserialize(jsonReader, t);
             }
         }
+
+        public static Color WithAlpha(this Color c, byte alpha) {
+            c.A = alpha;
+            return c;
+        }
+        public static Color WithAlpha(this Color c, float alpha) => c.WithAlpha((byte)(alpha * 255));
     }
 }

@@ -47,7 +47,7 @@ namespace SylphGame {
 
     public interface ICacheable { }
 
-    public class SGame {
+    public abstract class SGame {
 
         private static Dictionary<Type, Func<SGame, string, ICacheable>> _cacheCreate = new();
         public static void Register<T>(Func<SGame, string, T> create) where T : ICacheable {
@@ -56,7 +56,8 @@ namespace SylphGame {
 
         static SGame() {
             Register((sg, str) => new Entities.Sprite(sg, str));
-            SGame.Register((sg, str) => new LoadedSfx(sg, str));
+            Register((sg, str) => new LoadedSfx(sg, str));
+            Register((sg, str) => new Sylph.Core.UI.LoadedAtlases(sg));
         }
 
 
@@ -171,7 +172,7 @@ namespace SylphGame {
             );
         }
 
-        public void NewGame() {
+        public virtual void NewGame() {
             DoLoad(s => Data.Open("NewGame", s));
             Party.ID = Guid.NewGuid().ToString("N");
         }
@@ -181,6 +182,7 @@ namespace SylphGame {
 
         public void SaveGame(int slot) => DoSave(SlotPath(slot));
 
+        public abstract void MainMenu();
     }
 
     public class LoadedSfx : ICacheable {

@@ -32,15 +32,6 @@ namespace SylphGame {
             Call(door1, ScriptPriority.Idle, new DoorBehaviour<TestMap>(TileObjectFlags.ShiftLeft, "Entry1", "2C"));
 
             sgame.NewGame();
-
-            foreach(var chr in sgame.Party.Characters) {
-                chr.Register(new Characters.CoreBattle());
-                chr.Register(new Characters.CoreEquipment());
-            }
-            sgame.Party.Characters[0].Register(new Characters.Magic());
-            sgame.Party.Characters[1].Register(new Characters.Thief());
-
-            sgame.SaveGame(0);
         }
     }
 
