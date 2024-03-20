@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace SylphGame {
 
     public class UIDefaults {
+        public string DefaultFont { get; set; }
         public string ConfirmSfx { get; set; }
         public string CancelSfx { get; set; }
         public string MoveSfx { get; set; }

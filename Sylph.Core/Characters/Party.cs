@@ -44,16 +44,42 @@ namespace SylphGame.Characters {
 
     }
 
+    public enum StdIFlags {
+        SaveEnabled = 1,
+        Money = 2,
+    }
+
+
     public class Party : BehaviourOwner<IPartyBehaviour> {
 
+        public class StdPartyIFlags {
+            private Party _party;
+
+            internal StdPartyIFlags(Party party) {
+                _party = party;
+            }
+
+            public int this[StdIFlags flags] {
+                get => _party.IFlags.GetValueOrDefault(nameof(StdIFlags) + "." + flags.ToString());
+                set => _party.IFlags[nameof(StdIFlags) + "." + flags.ToString()] = value;
+            }
+        }
+
         public long Frames { get; set; }
+        public TimeSpan GameTime => TimeSpan.FromSeconds(Frames / 60.0);
         public string ID { get; set; }
         public Dictionary<string, int> IFlags { get; set; } = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
         public Dictionary<string, string> SFlags { get; set; } = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         public List<Character> Characters { get; set; } = new();
 
+        public StdPartyIFlags StdIFlags { get; private set; } 
+
         [JsonIgnore]
         public IEnumerable<Character> ActiveChars => Characters.Where(c => c.Flags.HasFlag(StandardCharacterFlags.InParty));
+
+        public Party() {
+            StdIFlags = new StdPartyIFlags(this);
+        }
 
         public static Party Load(Func<string, Stream> getReadable) {
             using (var s = getReadable("party.json")) {

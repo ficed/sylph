@@ -118,7 +118,8 @@ namespace SylphGame.UI {
 
     public class Label : Component {
         public Prop<string> Text { get; set; }
-        public Prop<uint> Color { get; set; } = 0xffffffff;
+        public Prop<string> Font { get; set; }
+        public Prop<Color> Color { get; set; } = Microsoft.Xna.Framework.Color.White;
         public Prop<TextAlign> Alignment { get; set; }
 
         private DynamicSpriteFont _font;
@@ -126,7 +127,10 @@ namespace SylphGame.UI {
 
         public override void Init(SGame sgame) {
             base.Init(sgame);
-            _font = sgame.DefaultFont;
+            if (!string.IsNullOrEmpty(Font.Value))
+                _font = sgame.GetFont(Font.Value);
+            else
+                _font = sgame.DefaultFont;
             _scale = 1f / sgame.Config.Scale;
         }
 
@@ -134,7 +138,7 @@ namespace SylphGame.UI {
             int x = xOffset + X.Value;
 
             if (Alignment.Value != TextAlign.Left) {
-                float width = _font.MeasureString(Text.Value, new Vector2(_scale)).Y;
+                float width = _font.MeasureString(Text.Value, new Vector2(_scale)).X;
                 switch (Alignment.Value) {
                     case TextAlign.Center:
                         x -= (int)(width * 0.5f);
@@ -148,8 +152,8 @@ namespace SylphGame.UI {
             }
 
             _font.DrawText(
-                spriteBatch, Text.Value, new Vector2(x, yOffset + Y.Value), new Color(Color.Value),
-                layerDepth: layer,
+                spriteBatch, Text.Value, new Vector2(x, yOffset + Y.Value), Color.Value,
+                layerDepth: layer, 
                 scale: new Vector2(_scale)
             );
         }

@@ -69,10 +69,22 @@ namespace SylphGame.UI {
             base.Render(spriteBatch);
             _container.Render(spriteBatch, Layer.UI_BACK, 0, 0);
             if (_focus != null) {
+                var pos = RenderPos(_focus);
                 spriteBatch.Draw(
-                    _cursor, new Vector2(_focus.X.Value - _cursor.Width - 1, _focus.Y.Value + 2), Color.White
+                    _cursor, new Vector2(pos.X - _cursor.Width - 1, pos.Y + 2), null, Color.White,
+                    0, Vector2.Zero, 1f, SpriteEffects.None, Layer.UI_FRONT
                 );
             }
+        }
+
+        protected Vector2 RenderPos(Component c) {
+            float x = 0, y = 0;
+            while (c != null) {
+                x += c.X.Value;
+                y += c.Y.Value;
+                c = c.Owner;
+            }
+            return new Vector2(x, y);
         }
 
         protected T Ref<T>(out T tRef, T value) {
@@ -81,16 +93,23 @@ namespace SylphGame.UI {
         }
 
         protected T Focus<T>(T component) where T : Component {
-            _focus = component;
+            if (component.OnSelect != null) {
+                _focus = component;
+            } else if (component is Container c) {
+                _focus = c.Children.First(child => child.OnSelect != null);
+            }
             return component;
         }
 
-        protected Label Label(Prop<int> x, Prop<int> y, Prop<string> text, Prop<TextAlign>? alignment = null) {
+        protected Label Label(Prop<int> x, Prop<int> y, Prop<string> text, 
+            Prop<TextAlign>? alignment = null, Prop<Color>? color = null, Prop<string>? font = null) {
             return new Label {
                 X = x,
                 Y = y,
                 Text = text,
                 Alignment = alignment ?? TextAlign.Left,
+                Color = color ?? Color.White,
+                Font = font ?? (string)null,
             };
         }
 
@@ -133,6 +152,51 @@ namespace SylphGame.UI {
             };
             b.AddRange(components);
             return b;
+        }
+
+        protected Group FullGauge(Prop<int> x, Prop<int> y, Prop<string> name, 
+            Func<int> current, Func<int> max, string numFont) {
+            return Group(
+                x, y,
+                Label(5, 5, name, color: Color.Aqua),
+                Label(50, 5, (Func<string>)(() => current().ToString()), alignment: TextAlign.Right, font: numFont),
+                Label(55, 5, "/"),
+                Label(90, 5, (Func<string>)(() => max().ToString()), alignment: TextAlign.Right, font: numFont),
+                Gauge(5, 20, 90, 3, current, max)
+            );
+        }
+
+
+        protected Group Menu(Prop<int> x, Prop<int> y,
+            Prop<int> w, Prop<int> h,
+            int offsetX, int offsetY,
+            params (string caption, Func<bool> enabled, Action onSelect)[] items) {
+            return Group(x, y,
+                items.Select((i, index) => new Label {
+                    X = (Func<int>)(() => offsetX * index),
+                    Y = (Func<int>)(() => offsetY * index),
+                    Text = i.caption,
+                    Color = (Func<Color>)(() => i.enabled() ? Color.White : Color.Gray),
+                    OnSelect = () => {
+                        if (i.enabled())
+                            i.onSelect();
+                        else
+                            _sfxCancel.Play();
+                    }
+                })
+                .ToArray()
+            );
+        }
+
+        protected Group MenuV(Prop<int> x, Prop<int> y, 
+            Prop<int> w, Prop<int> h,
+            params (string caption, Func<bool> enabled, Action onSelect)[] items) {
+            return Menu(x, y, w, h, 0, h.Value / items.Length, items);
+        }
+        protected Group MenuH(Prop<int> x, Prop<int> y,
+            Prop<int> w, Prop<int> h,
+            params (string caption, Func<bool> enabled, Action onSelect)[] items) {
+            return Menu(x, y, w, h, w.Value / items.Length, 0, items);
         }
     }
 }

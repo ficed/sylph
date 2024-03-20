@@ -64,6 +64,7 @@ namespace Sylph.Core {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
             SGame.ActiveScreen.Step();
+            SGame.Party.Frames++;
 
             base.Update(gameTime);
         }

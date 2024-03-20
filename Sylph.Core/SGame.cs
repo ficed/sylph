@@ -75,10 +75,11 @@ namespace SylphGame {
             return (T)result;
         }
 
+        private Dictionary<string, FontSystem> _fonts = new(StringComparer.InvariantCultureIgnoreCase);
+        private Dictionary<string, DynamicSpriteFont> _fontInstances = new(StringComparer.InvariantCultureIgnoreCase);
 
         public GraphicsDevice Graphics { get; private set; }
         public Data Data { get; private set; }
-        public FontSystem Fonts { get; private set; }
         public UI.Boxes Boxes { get; private set; }
         public SylphConfig Config { get; private set; }
         public DynamicSpriteFont DefaultFont { get; private set; }
@@ -100,16 +101,21 @@ namespace SylphGame {
             FontSystemDefaults.KernelWidth = 2;
             FontSystemDefaults.KernelHeight = 2;
 
-            Fonts = new FontSystem();
-            //TODO configure!
-            using(var s = Data.Open("Font", "FF6Snes.ttf"))
-                Fonts.AddFont(s);
-            DefaultFont = Fonts.GetFont(16 * Config.Scale);
+            foreach(string file in Data.Scan("Font", ".ttf")) {
+                var fonts = new FontSystem();
+                using (var s = Data.Open("Font", file))
+                    fonts.AddFont(s);
+                _fonts[Path.GetFileNameWithoutExtension(file)] = fonts;
+                _fontInstances[Path.GetFileNameWithoutExtension(file)] = fonts.GetFont(16 * Config.Scale);
+            }
+            DefaultFont = _fontInstances[Config.UIDefaults.DefaultFont];
 
             Boxes = new UI.Boxes(this);
 
             PushScreen(new Splash(launch));
         }
+
+        public DynamicSpriteFont GetFont(string name) => _fontInstances[name];
 
         public void PushScreen<T>() where T : Screen, new() {
             var s = new T();
