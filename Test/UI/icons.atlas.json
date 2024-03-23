@@ -1,0 +1,98 @@
+{
+  "Source": "icons.png",
+  "Items": [
+    {
+      "Name": "status_float",
+      "X": 0,
+      "Y": 0,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "status_petrify",
+      "X": 16,
+      "Y": 0,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "status_imp",
+      "X": 32,
+      "Y": 0,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "status_clear",
+      "X": 48,
+      "Y": 0,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "status_poison",
+      "X": 64,
+      "Y": 0,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "status_zombie",
+      "X": 80,
+      "Y": 0,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "status_dark",
+      "X": 96,
+      "Y": 0,
+      "Width": 16,
+      "Height": 16
+    },
+
+
+    {
+      "Name": "arrow_TODO",
+      "X": 0,
+      "Y": 16,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "scroll_base",
+      "X": 16,
+      "Y": 16,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "scroll_both",
+      "X": 32,
+      "Y": 16,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "scroll_up",
+      "X": 48,
+      "Y": 16,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "scroll_down",
+      "X": 64,
+      "Y": 16,
+      "Width": 16,
+      "Height": 16
+    },
+    {
+      "Name": "miss",
+      "X": 80,
+      "Y": 16,
+      "Width": 16,
+      "Height": 16
+    }
+  ]
+}

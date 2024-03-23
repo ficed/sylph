@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34616.47
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SylphGame", "SylphGame\SylphGame.csproj", "{294036FB-3318-4B33-8219-DB189601C7B7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SylphGame", "SylphGame\SylphGame.csproj", "{294036FB-3318-4B33-8219-DB189601C7B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sylph.Core", "Sylph.Core\Sylph.Core.csproj", "{A2E7DBEC-C867-4DBC-B33C-37A9955B7109}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{294036FB-3318-4B33-8219-DB189601C7B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{294036FB-3318-4B33-8219-DB189601C7B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{294036FB-3318-4B33-8219-DB189601C7B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2E7DBEC-C867-4DBC-B33C-37A9955B7109}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2E7DBEC-C867-4DBC-B33C-37A9955B7109}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2E7DBEC-C867-4DBC-B33C-37A9955B7109}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2E7DBEC-C867-4DBC-B33C-37A9955B7109}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

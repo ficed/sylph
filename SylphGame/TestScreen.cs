@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SylphGame;
+using SylphGame.Field;
 using SylphGame.UI;
 using System;
 using System.Collections.Generic;
@@ -8,12 +10,39 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SylphGame {
+
+    public class TestMap : Field.MapScreen {
+
+        public override void Setup(string entrypoint) {
+            base.Setup(entrypoint);
+            _tilemap = "Cave1";
+        }
+
+        public override void Init(SGame sgame) {
+            base.Init(sgame);
+
+            var locke = new Field.SpriteObject(sgame, "Locke");
+            DropToMap(locke, new IVector2(20, 13));
+            locke.Sprite.PlayAnimation("FingerWag", true);
+            _objects.Add(locke);
+
+            Call(locke, Field.ScriptPriority.Idle, new WalkRandomlyBehaviour(4, 1, 30, 180));
+
+            var door1 = new Field.TileMapObject(this, "Door1");
+            Call(door1, ScriptPriority.Idle, new DoorBehaviour<TestMap>(TileObjectFlags.ShiftLeft, "Entry1", "2C"));
+
+            sgame.NewGame();
+        }
+    }
+
     public class TestScreen : Screen {
 
         private Field.TileMap _map;
         private int _scrollX, _scrollY;
 
-        public TestScreen(SGame sgame) : base(sgame) {
+
+        public override void Init(SGame sgame) {
+            base.Init(sgame);
             var sprite = new Entities.Sprite(_sgame, "Terra");
             var terra = sprite.New();
             terra.Layer = Layer.BACKGROUND_MID;
@@ -82,7 +111,8 @@ namespace SylphGame {
             Environment.Exit(0);
         }
 
-        public TestUIScreen(SGame sgame) : base(sgame) {
+        public override void Init(SGame sgame) {
+            base.Init(sgame);
             _container = Group(0, 0,
                 Image(100, 20, 0, 0, "Title"),
                 Focus(Label(200, 120, "New Game").WithOnSelect(NewGame)),

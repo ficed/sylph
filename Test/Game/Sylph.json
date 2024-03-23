@@ -1,12 +1,15 @@
 {
   "Title": "Sylph Test",
   "GameID": "test.sylph.ficedula.co.uk",
-  "Scale": 6,
+  "Scale": 3,
   "SplashGraphic": "Splash",
+  "LoadGraphic": "Loading",
   "UIDefaults": {
     "ConfirmSfx": "DC",
     "MoveSfx": "DC",
     "CancelSfx": "0D",
-    "CursorGraphic": "Cursor"
+    "CursorGraphic": "Cursor",
+    "DefaultFont": "FF6Snes",
+    "NumericFont": "FF6SnesA"
   }
 }

@@ -27,7 +27,8 @@ namespace SylphGame.Entities {
         public List<SpriteAnimation> Animations { get; set; } = new();
     }
 
-    public class Sprite {
+    public class Sprite : ICacheable {
+
         private SpriteData _data;
         private Texture2D _tex;
 
@@ -43,7 +44,7 @@ namespace SylphGame.Entities {
         public class Instance : IEntity {
             private SpriteAnimation _animation;
             private int _frame;
-            private bool _loop;
+            private bool _loop, _animate;
             private Sprite _sprite;
             
             public Vector2 Position { get; set; }
@@ -55,10 +56,14 @@ namespace SylphGame.Entities {
                 PlayAnimation("idle", true);
             }
 
-            public void PlayAnimation(string animation, bool loop) {
+            public void PlayAnimation(string animation, bool loop, bool forceRestart = false) {
+                if (!forceRestart && (_loop == loop) && (_animation.Name == animation))
+                    return;
+
                 _animation = _sprite._data.Animations.Single(a => a.Name.Equals(animation, StringComparison.InvariantCultureIgnoreCase));
                 _frame = 0;
                 _loop = loop;
+                _animate = true;
             }
 
             public void Render(SpriteBatch batch) {
@@ -70,7 +75,7 @@ namespace SylphGame.Entities {
 
                 batch.Draw(
                     _sprite._tex,
-                    new Rectangle((int)Position.X, (int)Position.Y, _sprite._data.FrameWidth, _sprite._data.FrameHeight),
+                    new Rectangle((int)Position.X, (int)Position.Y - _sprite._data.FrameHeight, _sprite._data.FrameWidth, _sprite._data.FrameHeight),
                     _sprite.GetFrameRect(_animation.Frames[_frame]),
                     Color.White,
                     0,
@@ -81,16 +86,20 @@ namespace SylphGame.Entities {
             }
 
             public void Step() {
-                if (_frame < (_animation.Frames.Count - 1))
-                    _frame++;
-                else if (_loop)
-                    _frame = 0;
+                if (_animate) {
+                    if (_frame < (_animation.Frames.Count - 1))
+                        _frame++;
+                    else if (_loop)
+                        _frame = 0;
+                    else
+                        _animate = false;
+                }
             }
         }
 
 
         public Sprite(SGame sgame, string name) {
-            _data = sgame.Load<SpriteData>("Sprite", name);
+            _data = sgame.LoadJson<SpriteData>("Sprite", name);
             _tex = sgame.LoadTex("Sprite", name);
         }
 
