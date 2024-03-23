@@ -22,12 +22,30 @@ namespace SylphGame {
         }
 
         public Stream TryOpen(string category, string name) {
+
+            if (!System.IO.Path.GetExtension(name).Equals(".ref", StringComparison.InvariantCultureIgnoreCase)) {
+                using (var sRef = TryOpen(category, name + ".ref")) {
+                    if (sRef != null)
+                        using (var streamReader = new StreamReader(sRef))
+                            return TryOpen(category, streamReader.ReadToEnd().Trim());
+                }
+            }
+
             foreach (string root in _roots) {
                 string fn = Path.Combine(root, category, name);
                 if (File.Exists(fn))
                     return File.OpenRead(fn);
             }
             return null;
+        }
+
+        public IEnumerable<string> Scan(string category, string ext) {
+            foreach (string root in _roots) {
+                string dir = Path.Combine(root, category);
+                if (Directory.Exists(dir))
+                    foreach (string file in Directory.GetFiles(dir, "*" + ext))
+                        yield return Path.GetFileName(file);
+            }
         }
     }
 }
