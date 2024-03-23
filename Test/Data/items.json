@@ -1,0 +1,19 @@
+{
+  "Items": [
+    {
+      "ID": 1,
+      "Name": "Tonic",
+      "Description": "Restores 50HP",
+      "AttackID": 1001
+    },
+    {
+      "ID": 2,
+      "Name": "Tincture",
+      "Description": "Restores 50MP",
+      "AttackID": 1002
+    }
+  ],
+  "KeyItems": [
+
+  ]
+}

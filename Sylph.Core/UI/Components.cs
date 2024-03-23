@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SylphGame.UI {
 
@@ -32,6 +31,12 @@ namespace SylphGame.UI {
         }
     }
 
+    public interface ICustomFocus {
+        (int X, int Y) FocusLocation { get; }
+        void Focussed();
+        void LostFocus();
+    }
+
     public abstract class Component {
         public Prop<int> X { get; set; }
         public Prop<int> Y { get; set; }
@@ -41,6 +46,29 @@ namespace SylphGame.UI {
 
         public abstract void Render(SpriteBatch spriteBatch, Layer layer, int xOffset, int yOffset);
         public virtual void Init(SGame sgame) { }
+
+        public IEnumerable<Component> Ancestors {
+            get {
+                Container o = Owner;
+                while (o != null) {
+                    yield return o;
+                    o = o.Owner;
+                }
+            }
+        }
+    }
+
+    [Flags]
+    public enum InputProcessResults {
+        None = 0,
+        PlayMoveSfx = 0x1,
+        PlayConfirmSfx = 0x2,
+        PlayCancelSfx = 0x4,
+        StopProcessing = 0x8,
+    }
+
+    public interface IInputComponent {
+        InputProcessResults Process(InputState input);
     }
 
     public static class ComponentUtil {
@@ -59,7 +87,7 @@ namespace SylphGame.UI {
         }
     }
 
-    public abstract class SizedComponent : Component { 
+    public abstract class SizedComponent : Component {
         public Prop<int> W { get; set; }
         public Prop<int> H { get; set; }
     }
@@ -118,43 +146,26 @@ namespace SylphGame.UI {
 
     public class Label : Component {
         public Prop<string> Text { get; set; }
-        public Prop<string> Font { get; set; }
+        public Prop<DynamicSpriteFont> Font { get; set; }
         public Prop<Color> Color { get; set; } = Microsoft.Xna.Framework.Color.White;
         public Prop<TextAlign> Alignment { get; set; }
 
-        private DynamicSpriteFont _font;
         private float _scale;
-
+        private SGame _sgame;
+        
         public override void Init(SGame sgame) {
             base.Init(sgame);
-            if (!string.IsNullOrEmpty(Font.Value))
-                _font = sgame.GetFont(Font.Value);
-            else
-                _font = sgame.DefaultFont;
+            _sgame = sgame;
             _scale = 1f / sgame.Config.Scale;
         }
 
         public override void Render(SpriteBatch spriteBatch, Layer layer, int xOffset, int yOffset) {
-            int x = xOffset + X.Value;
-
-            if (Alignment.Value != TextAlign.Left) {
-                float width = _font.MeasureString(Text.Value, new Vector2(_scale)).X;
-                switch (Alignment.Value) {
-                    case TextAlign.Center:
-                        x -= (int)(width * 0.5f);
-                        break;
-                    case TextAlign.Right:
-                        x -= (int)width;
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
-
-            _font.DrawText(
+            int x = xOffset + X.Value;            
+            (Font.Value ?? _sgame.DefaultFont).DrawText(
                 spriteBatch, Text.Value, new Vector2(x, yOffset + Y.Value), Color.Value,
-                layerDepth: layer, 
-                scale: new Vector2(_scale)
+                layerDepth: layer,
+                scale: new Vector2(_scale),
+                textAlign: Alignment.Value
             );
         }
     }
@@ -217,4 +228,95 @@ namespace SylphGame.UI {
         }
     }
 
+    public class ListBox<T> : SizedComponent, IInputComponent, ICustomFocus {
+
+        private const int ITEM_HEIGHT = 15; //TODO??
+
+        public Prop<DynamicSpriteFont> TextFont { get; set; }
+        public Prop<DynamicSpriteFont> AnnotateFont { get; set; }
+
+        private int _top, _sel;
+        private IEnumerable<T> _source;
+        private Action<T> _onFocus, _onSelect;
+        private Func<T, string> _name, _annotation;
+        private float _scale;
+
+        public (int X, int Y) FocusLocation => (0, (_sel - _top) * ITEM_HEIGHT + ITEM_HEIGHT / 2);
+
+        public ListBox(IEnumerable<T> source, Action<T> onFocus, Action<T> onSelect, Func<T, string> getName, Func<T, string> getAnnotation) {
+            _source = source;
+            _onFocus = onFocus;
+            _onSelect = onSelect;
+            _name = getName;    
+            _annotation = getAnnotation;
+        }
+
+        public override void Init(SGame sgame) {
+            base.Init(sgame);
+            _scale = 1f / sgame.Config.Scale;
+        }
+
+        public InputProcessResults Process(InputState input) {
+            if (input.IsJustDown(InputButton.Cancel)) {
+                return InputProcessResults.None;
+            }
+
+            if (!_source.Any()) return InputProcessResults.StopProcessing;
+
+            if (input.IsDownRepeat(InputButton.Up)) {
+                if (_sel > 0) {
+                    _sel--;
+                    _onFocus?.Invoke(_source.ElementAt(_sel));
+                    return InputProcessResults.PlayMoveSfx | InputProcessResults.StopProcessing;
+                }
+            } else if (input.IsDownRepeat(InputButton.Down)) {
+                if (_sel < (_source.Count() - 1)) {
+                    _sel++;
+                    _onFocus?.Invoke(_source.ElementAt(_sel));
+                    return InputProcessResults.PlayMoveSfx | InputProcessResults.StopProcessing;
+                }
+            } else if (input.IsJustDown(InputButton.OK)) {
+                _onSelect?.Invoke(_source.ElementAt(_sel));
+                return InputProcessResults.PlayConfirmSfx | InputProcessResults.StopProcessing;
+            }
+
+            return InputProcessResults.StopProcessing;
+        }
+
+        public override void Render(SpriteBatch spriteBatch, Layer layer, int xOffset, int yOffset) {
+            if (_sel < _top) _top = _sel;
+
+            int num = H.Value / ITEM_HEIGHT;
+
+            if (_sel > (_top + num - 1))
+                _top = _sel - num + 1;
+
+            int y = 0;
+            foreach(T item in _source.Skip(_top).Take(num)) {
+                TextFont.Value.DrawText(
+                    spriteBatch, _name(item), new Vector2(xOffset + X.Value, yOffset + Y.Value + y), Color.White,
+                    layerDepth: layer,
+                    scale: new Vector2(_scale)
+                );
+                if (_annotation != null) {
+                    AnnotateFont.Value.DrawText(
+                        spriteBatch, _annotation(item), new Vector2(xOffset + X.Value + W.Value, yOffset + Y.Value + y), Color.White,
+                        textAlign: TextAlign.Right,
+                        layerDepth: layer,
+                        scale: new Vector2(_scale)
+                    );
+                }
+                y += ITEM_HEIGHT;
+            }
+        }
+
+        public void Focussed() {
+            if (_source.Any())
+                _onFocus?.Invoke(_source.ElementAt(_sel));
+        }
+
+        public void LostFocus() {
+            _onFocus?.Invoke(default(T));
+        }
+    }
 }

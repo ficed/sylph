@@ -9,6 +9,7 @@
     "MoveSfx": "DC",
     "CancelSfx": "0D",
     "CursorGraphic": "Cursor",
-    "DefaultFont": "FF6Snes"
+    "DefaultFont": "FF6Snes",
+    "NumericFont": "FF6SnesA"
   }
 }

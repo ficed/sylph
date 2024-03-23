@@ -27,6 +27,8 @@ namespace SylphGame {
         public static readonly Layer UI_MID = new Layer(20);
         public static readonly Layer UI_FRONT = new Layer(24);
 
+        public static readonly Layer UI_DECORATIONS = new Layer(28);
+
         public static readonly Layer MAX_OVERLAY = new Layer(31);
 
         private int _index;
@@ -83,6 +85,7 @@ namespace SylphGame {
         public UI.Boxes Boxes { get; private set; }
         public SylphConfig Config { get; private set; }
         public DynamicSpriteFont DefaultFont { get; private set; }
+        public DynamicSpriteFont NumericFont { get; private set; }
         public InputState Input { get; private set; } = new InputState();
 
         private Stack<Screen> _screens = new();
@@ -109,6 +112,7 @@ namespace SylphGame {
                 _fontInstances[Path.GetFileNameWithoutExtension(file)] = fonts.GetFont(16 * Config.Scale);
             }
             DefaultFont = _fontInstances[Config.UIDefaults.DefaultFont];
+            NumericFont = _fontInstances[Config.UIDefaults.NumericFont];
 
             Boxes = new UI.Boxes(this);
 

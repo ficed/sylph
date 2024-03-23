@@ -436,6 +436,7 @@ namespace SylphGame.Field {
                 Options |= MapOptions.NoInteraction;
                 RegisterEffect(FadeEffect.Out(30, () => {
                     _sgame.MainMenu();
+                    Options &= ~MapOptions.NoInteraction;
                 }));
             }
 

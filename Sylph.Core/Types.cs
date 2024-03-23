@@ -1,12 +1,17 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
+using SylphGame.UI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SylphGame {
 
@@ -208,5 +213,31 @@ namespace SylphGame {
             return c;
         }
         public static Color WithAlpha(this Color c, float alpha) => c.WithAlpha((byte)(alpha * 255));
+
+        public static float DrawText(this DynamicSpriteFont font, SpriteBatch batch, string text, Vector2 position, 
+            Color color, float rotation = 0f, Vector2 origin = default(Vector2), Vector2? scale = null, 
+            float layerDepth = 0f, float characterSpacing = 0f, float lineSpacing = 0f, 
+            TextStyle textStyle = TextStyle.None, FontSystemEffect effect = FontSystemEffect.None, 
+            int effectAmount = 0, TextAlign textAlign = TextAlign.Left) {
+
+            if (textAlign != TextAlign.Left) {
+                float width = font.MeasureString(text, scale).X;
+                switch (textAlign) {
+                    case TextAlign.Center:
+                        position.X -= (int)(width * 0.5f);
+                        break;
+                    case TextAlign.Right:
+                        position.X -= (int)width;
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+
+            return font.DrawText(
+                batch, text, position, color, rotation, origin, scale, layerDepth, characterSpacing, lineSpacing,
+                textStyle, effect, effectAmount
+            );
+        }
     }
 }

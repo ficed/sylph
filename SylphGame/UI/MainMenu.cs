@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SylphGame.UI {
-    public class MainMenu : UIScreen {
+    public class MainMenu : BaseUI {
 
         private static readonly (CoreStatuses status, string icon)[] STATUS_ICONS = new[] {
             (CoreStatuses.Poison, "status_poison"),
@@ -29,17 +29,17 @@ namespace SylphGame.UI {
             return Group(10, yOffset,
                 Label(60, 0, chr.Name),
                 Label(100, 0, "LV", color: Color.Aqua),
-                Label(130, 0, Dyn(() => battle.Level.ToString()), alignment: TextAlign.Right, font: "FF6SnesA"),
+                Label(130, 0, Dyn(() => battle.Level.ToString()), alignment: TextAlign.Right, font: _sgame.NumericFont),
                 Image(0 + (battle.Statuses.HasFlag(CoreStatuses.BackRow) ? 10 : 0), 0, 40, 40, chr.SmallImage),
 
-                FullGauge(60, 10, "HP", () => battle.CurrentHP, () => battle.MaxHP, "FF6SnesA"),
-                FullGauge(160, 10, "MP", () => battle.CurrentMP, () => battle.MaxMP, "FF6SnesA")
+                FullGauge(60, 10, "HP", () => battle.CurrentHP, () => battle.MaxHP),
+                FullGauge(160, 10, "MP", () => battle.CurrentMP, () => battle.MaxMP)
             )
             .AddChildren(GetIcons());
         }
 
         private void SelectItem() {
-
+            FadeOutAndSwitchTo<ItemScreen>();
         }
 
         private void Quit() {
@@ -75,10 +75,10 @@ namespace SylphGame.UI {
                 ),
                 Box(320, 180, 100, 50,
                     Label(10, 5, "Time", color: Color.Aqua),
-                    Label(90, 5, (Func<string>)GameTime, TextAlign.Right, font: "FF6SnesA"),
+                    Label(90, 5, (Func<string>)GameTime, TextAlign.Right, font: sgame.NumericFont),
 
                     Label(10, 20, "Gil", color: Color.Aqua),
-                    Label(90, 20, (Func<string>)(() => _sgame.Party.StdIFlags[StdIFlags.Money].ToString()), TextAlign.Right, font: "FF6SnesA")
+                    Label(90, 20, (Func<string>)(() => _sgame.Party.StdIFlags[StdIFlags.Money].ToString()), TextAlign.Right, font: _sgame.NumericFont)
                 )
             );
 

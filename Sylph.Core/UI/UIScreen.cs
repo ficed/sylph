@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -11,11 +12,20 @@ namespace SylphGame.UI {
     public abstract class UIScreen : Screen {
 
         protected Container _container;
-        protected Component _focus;
+        protected Component _popup;
+        private Stack<Component> _focus = new();
         private Texture2D _cursor;
         private LoadedSfx _sfxMove, _sfxConfirm, _sfxCancel;
+        protected bool _inputEnabled = true;
 
         protected static Prop<T> Dyn<T>(Func<T> getValue) => getValue;
+
+        public Component Focused {
+            get {
+                _focus.TryPeek(out var f);
+                return f;
+            }
+        }
 
         public override void Activated() {
             base.Activated();
@@ -26,9 +36,42 @@ namespace SylphGame.UI {
             _sfxConfirm = _sgame.Load<LoadedSfx>(_sgame.Config.UIDefaults.ConfirmSfx);
         }
 
+        protected virtual void DoCancel() {
+            if (_focus.Any()) {
+                PopFocus();
+                _sfxCancel.Play();
+                if (!_focus.Any()) {
+                    _inputEnabled = false;
+                    _entities.Add(FadeEffect.Out(30, () => {
+                        _sgame.PopScreen(this);
+                    }));
+                }
+            }
+        }
+
+        protected void FadeOutAndSwitchTo<T>() where T : UIScreen, new() {
+            _inputEnabled = false;
+            _entities.Add(FadeEffect.Out(30, () => {
+                _sgame.PushScreen<T>();
+                _inputEnabled = true;
+            }));
+        }
+
         public override void Step() {
             base.Step();
-            if (_focus != null) {
+            if (_focus.TryPeek(out var focus) && _inputEnabled) {
+                if (focus is IInputComponent ic) {
+                    var results = ic.Process(_sgame.Input);
+                    if (results.HasFlag(InputProcessResults.PlayMoveSfx))
+                        _sfxMove.Play();
+                    if (results.HasFlag(InputProcessResults.PlayConfirmSfx))
+                        _sfxConfirm.Play();
+                    if (results.HasFlag(InputProcessResults.PlayCancelSfx))
+                        _sfxCancel.Play();
+                    if (results.HasFlag(InputProcessResults.StopProcessing))
+                        return;
+                }
+
                 if (_sgame.Input.IsDownRepeat(InputButton.Left))
                     SwitchFocus(-1, 0);
                 else if (_sgame.Input.IsDownRepeat(InputButton.Right))
@@ -38,17 +81,21 @@ namespace SylphGame.UI {
                 else if (_sgame.Input.IsDownRepeat(InputButton.Down))
                     SwitchFocus(0, 1);
                 else if (_sgame.Input.IsJustDown(InputButton.OK)) {
-                    _focus.OnSelect?.Invoke();
+                    focus.OnSelect?.Invoke();
                     _sfxConfirm.Play();
                 }
+
+                if (_sgame.Input.IsJustDown(InputButton.Cancel))
+                    DoCancel();
             }
         }
 
         protected void SwitchFocus(int dx, int dy) {
-            var candidates = _focus.Owner.Children
+            var focus = _focus.Peek();
+            var candidates = focus.Owner.Children
                 .Where(c => c.OnSelect != null)
-                .Where(c => c != _focus)
-                .Select(c => new { Component = c, X = c.X.Value - _focus.X.Value, Y = c.Y.Value - _focus.Y.Value });
+                .Where(c => c != focus)
+                .Select(c => new { Component = c, X = c.X.Value - focus.X.Value, Y = c.Y.Value - focus.Y.Value });
 
             if (dx != 0)
                 candidates = candidates.Where(c => Math.Sign(c.X) == dx)
@@ -60,7 +107,8 @@ namespace SylphGame.UI {
                     .ThenBy(c => Math.Abs(c.Y));
 
             if (candidates.Any()) {
-                _focus = candidates.First().Component;
+                _focus.Pop();
+                _focus.Push(candidates.First().Component);
                 _sfxMove.Play();
             }
         }
@@ -68,11 +116,20 @@ namespace SylphGame.UI {
         protected override void Render(SpriteBatch spriteBatch) {
             base.Render(spriteBatch);
             _container.Render(spriteBatch, Layer.UI_BACK, 0, 0);
-            if (_focus != null) {
-                var pos = RenderPos(_focus);
+            _popup?.Render(spriteBatch, Layer.UI_FRONT, 0, 0);
+            if (_focus.TryPeek(out var focus)) {
+                var pos = RenderPos(focus);
+                if (focus is ICustomFocus loc) {
+                    var offset = loc.FocusLocation;
+                    pos.X += offset.X;
+                    pos.Y += offset.Y;
+                } else {
+                    pos.X -= 1;
+                    pos.Y += 2;
+                }
                 spriteBatch.Draw(
-                    _cursor, new Vector2(pos.X - _cursor.Width - 1, pos.Y + 2), null, Color.White,
-                    0, Vector2.Zero, 1f, SpriteEffects.None, Layer.UI_FRONT
+                    _cursor, new Vector2(pos.X - _cursor.Width, pos.Y), null, Color.White,
+                    0, Vector2.Zero, 1f, SpriteEffects.None, Layer.UI_DECORATIONS
                 );
             }
         }
@@ -93,23 +150,67 @@ namespace SylphGame.UI {
         }
 
         protected T Focus<T>(T component) where T : Component {
-            if (component.OnSelect != null) {
-                _focus = component;
-            } else if (component is Container c) {
-                _focus = c.Children.First(child => child.OnSelect != null);
+
+            bool CanFocus(Component c) => (c.OnSelect != null) || (c is IInputComponent);
+
+            Component FindFocusable(Component c) {
+                if (CanFocus(c))
+                    return c;
+                else if (c is Container container) {
+                    return container.Children
+                        .Select(child => FindFocusable(child))
+                        .FirstOrDefault();
+                } else
+                    return null;
             }
+
+            var focus = FindFocusable(component);
+            if (focus != null) 
+                _focus.Push(focus);
+
+            DoFocusChanged();
             return component;
+        }
+        protected void PopFocus() {
+            var old = _focus.Pop();
+            if (old is ICustomFocus cf)
+                cf.LostFocus();
+            DoFocusChanged();
+        }
+
+        private void DoFocusChanged() {
+            if (_container != null) {
+                if (_focus.TryPeek(out var focus)) {
+                    if (focus is ICustomFocus cf)
+                        cf.Focussed();
+                    if (_popup != null) {
+                        if (!focus.Ancestors.Contains(_popup)) {
+                            _popup.Visible = false;
+                            _popup = null;
+                        }
+                    }
+                }
+                FocusChanged(); //Try to avoid firing events until init is complete
+            }
+        }
+        protected virtual void FocusChanged() { }
+
+        protected T Popup<T>(T t) where T : Component {
+            _popup = t;
+            t.Visible = true;
+            Focus(t);
+            return t;
         }
 
         protected Label Label(Prop<int> x, Prop<int> y, Prop<string> text, 
-            Prop<TextAlign>? alignment = null, Prop<Color>? color = null, Prop<string>? font = null) {
+            Prop<TextAlign>? alignment = null, Prop<Color>? color = null, Prop<DynamicSpriteFont>? font = null) {
             return new Label {
                 X = x,
                 Y = y,
                 Text = text,
                 Alignment = alignment ?? TextAlign.Left,
                 Color = color ?? Color.White,
-                Font = font ?? (string)null,
+                Font = font ?? _sgame.DefaultFont,
             };
         }
 
@@ -154,14 +255,27 @@ namespace SylphGame.UI {
             return b;
         }
 
+        protected ListBox<T> ListBox<T>(Prop<int> x, Prop<int> y, Prop<int> w, Prop<int> h, 
+            Prop<DynamicSpriteFont> textFont, Prop<DynamicSpriteFont> annotateFont,
+            IEnumerable<T> source, Action<T> onFocus, Action<T> onSelect, Func<T, string> getName, Func<T, string> getAnnotation) {
+            return new ListBox<T>(source, onFocus, onSelect, getName, getAnnotation) {
+                X = x,
+                Y = y,
+                W = w,
+                H = h,
+                TextFont = textFont,
+                AnnotateFont = annotateFont,
+            };
+        }
+
         protected Group FullGauge(Prop<int> x, Prop<int> y, Prop<string> name, 
-            Func<int> current, Func<int> max, string numFont) {
+            Func<int> current, Func<int> max) {
             return Group(
                 x, y,
                 Label(5, 5, name, color: Color.Aqua),
-                Label(50, 5, (Func<string>)(() => current().ToString()), alignment: TextAlign.Right, font: numFont),
+                Label(50, 5, (Func<string>)(() => current().ToString()), alignment: TextAlign.Right, font: _sgame.NumericFont),
                 Label(55, 5, "/"),
-                Label(90, 5, (Func<string>)(() => max().ToString()), alignment: TextAlign.Right, font: numFont),
+                Label(90, 5, (Func<string>)(() => max().ToString()), alignment: TextAlign.Right, font: _sgame.NumericFont),
                 Gauge(5, 20, 90, 3, current, max)
             );
         }
